@@ -1,0 +1,126 @@
+/**
+ * VSL Player Otimizado - Admin Styles
+ */
+
+/* General admin styling */
+.vsl-player-admin {
+    max-width: 900px;
+}
+
+.vsl-player-admin h1 {
+    margin-bottom: 20px;
+}
+
+/* License page styling */
+.vsl-license-container {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    padding: 20px;
+    margin-top: 20px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.license-info {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.license-status {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 3px;
+    color: #fff;
+    font-weight: 500;
+}
+
+.status-active {
+    background-color: #46b450;
+}
+
+.status-inactive {
+    background-color: #dc3232;
+}
+
+.status-expired {
+    background-color: #ffb900;
+}
+
+/* Support page styling */
+.vsl-support-container {
+    display: flex;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.support-section, .license-section {
+    flex: 1 1 300px;
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    padding: 20px;
+    margin-right: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.whatsapp-link {
+    display: inline-flex;
+    align-items: center;
+    background-color: #25D366;
+    color: #fff;
+    padding: 8px 15px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.whatsapp-link:hover {
+    background-color: #128C7E;
+    color: #fff;
+}
+
+.whatsapp-link .dashicons {
+    margin-right: 5px;
+}
+
+/* VSL and Reveal metabox styling */
+.shortcode-container {
+    display: flex;
+    align-items: center;
+}
+
+.shortcode-container input {
+    margin-right: 10px;
+}
+
+.shortcode-field {
+    width: 250px;
+    background-color: #f9f9f9;
+}
+
+.media-upload-container {
+    margin-bottom: 10px;
+}
+
+.media-preview {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.media-preview img {
+    max-width: 100px;
+    margin-right: 10px;
+}
+
+/* Admin columns styling */
+.no-thumbnail {
+    width: 100px;
+    height: 56px;
+    background-color: #f1f1f1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #666;
+}
