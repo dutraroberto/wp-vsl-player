@@ -104,6 +104,22 @@ class VSL_Player_Public {
             true
         );
         
+        // Registrar o CSS e JS do recurso de revelar oferta
+        wp_register_style(
+            'vsl-player-reveal-offer',
+            VSL_PLAYER_URL . 'public/css/vsl-player-reveal-offer.css',
+            array(),
+            VSL_PLAYER_VERSION
+        );
+        
+        wp_register_script(
+            'vsl-player-reveal-offer',
+            VSL_PLAYER_URL . 'public/js/vsl-player-reveal-offer.js',
+            array('jquery', 'vsl-player-youtube'),
+            VSL_PLAYER_VERSION,
+            true
+        );
+        
         // Collect all VSL Player data for the page
         $players_data = $this->get_vsl_players_data();
         
@@ -273,6 +289,13 @@ class VSL_Player_Public {
         if ($enable_resume_player) {
             wp_enqueue_style('vsl-player-resume');
             wp_enqueue_script('vsl-player-resume');
+        }
+        
+        // Se o revelar oferta estiver ativado, carregue os arquivos relacionados
+        $enable_reveal_offer = get_post_meta($post_id, '_vsl_enable_reveal_offer', true) === '1';
+        if ($enable_reveal_offer) {
+            wp_enqueue_style('vsl-player-reveal-offer');
+            wp_enqueue_script('vsl-player-reveal-offer');
         }
         
         return $output;

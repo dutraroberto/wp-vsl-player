@@ -1,0 +1,11 @@
+/**
+ * VSL Player Otimizado - Revelar Oferta CSS
+ */
+
+/* Estilos responsivos */
+@media only screen and (max-width: 768px) {
+    /* Ajuste para dispositivos móveis */
+    [class*="vsl-player"] .mobile-flex {
+        display: block !important;
+    }
+}

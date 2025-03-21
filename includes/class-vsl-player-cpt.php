@@ -137,6 +137,12 @@ class VSL_Player_CPT {
         $resume_button_color = get_post_meta($post->ID, '_vsl_resume_button_color', true) ?: '#617be5';
         $resume_button_hover_color = get_post_meta($post->ID, '_vsl_resume_button_hover_color', true) ?: '#3854c3';
         
+        // Opções para Revelar Oferta
+        $enable_reveal_offer = get_post_meta($post->ID, '_vsl_enable_reveal_offer', true);
+        $reveal_class = get_post_meta($post->ID, '_vsl_reveal_class', true);
+        $reveal_time = get_post_meta($post->ID, '_vsl_reveal_time', true) ?: '3';
+        $reveal_urls = get_post_meta($post->ID, '_vsl_reveal_urls', true);
+        
         // Valores padrão
         if (empty($pause_style)) {
             $pause_style = 'default';
@@ -308,6 +314,62 @@ class VSL_Player_CPT {
                             <div class="vsl-field-input">
                                 <input type="text" id="vsl_resume_button_hover_color" name="vsl_resume_button_hover_color" value="<?php echo esc_attr($resume_button_hover_color); ?>" 
                                        class="vsl-color-picker" data-default-color="#8950C7">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SEÇÃO: REVELAR OFERTA -->
+            <div class="vsl-settings-section">
+                <div class="vsl-section-header">
+                    <span class="dashicons dashicons-cart"></span>
+                    <h2><?php echo esc_html__('Revelar Oferta', 'vsl-player'); ?></h2>
+                </div>
+                <div class="vsl-section-content">
+                    <div class="vsl-field-row">
+                        <div class="vsl-field-label">
+                            <label><?php echo esc_html__('Ativar Revelar Oferta', 'vsl-player'); ?></label>
+                            <p class="description"><?php echo esc_html__('Se ativado, o conteúdo de oferta será revelado após um tempo determinado.', 'vsl-player'); ?></p>
+                        </div>
+                        <div class="vsl-field-input">
+                            <label class="vsl-toggle-switch">
+                                <input type="checkbox" id="vsl_enable_reveal_offer" name="vsl_enable_reveal_offer" value="1" <?php checked($enable_reveal_offer, '1'); ?> class="vsl-conditional-control" data-control-group="vsl-reveal-offer-options">
+                                <span class="vsl-toggle-slider"></span>
+                            </label>
+                            <span class="vsl-toggle-label"><?php echo esc_html__('Ativar', 'vsl-player'); ?></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Opções para Revelar Oferta (visíveis apenas quando o Revelar Oferta está ativado) -->
+                    <div class="vsl-conditional-field vsl-reveal-offer-options">
+                        <div class="vsl-field-row">
+                            <div class="vsl-field-label">
+                                <label for="vsl_reveal_class"><?php echo esc_html__('Classe do Elemento de Oferta', 'vsl-player'); ?></label>
+                                <p class="description"><?php echo esc_html__('Insira a classe CSS do elemento que será revelado.', 'vsl-player'); ?></p>
+                            </div>
+                            <div class="vsl-field-input">
+                                <input type="text" id="vsl_reveal_class" name="vsl_reveal_class" value="<?php echo esc_attr($reveal_class); ?>" class="regular-text" placeholder=".offer-element">
+                            </div>
+                        </div>
+                        
+                        <div class="vsl-field-row">
+                            <div class="vsl-field-label">
+                                <label for="vsl_reveal_time"><?php echo esc_html__('Tempo para Revelar (em segundos)', 'vsl-player'); ?></label>
+                                <p class="description"><?php echo esc_html__('Defina o tempo em segundos até que o conteúdo de oferta seja revelado.', 'vsl-player'); ?></p>
+                            </div>
+                            <div class="vsl-field-input">
+                                <input type="number" id="vsl_reveal_time" name="vsl_reveal_time" value="<?php echo esc_attr($reveal_time); ?>" min="0" step="1" class="small-text">
+                            </div>
+                        </div>
+                        
+                        <div class="vsl-field-row">
+                            <div class="vsl-field-label">
+                                <label for="vsl_reveal_urls"><?php echo esc_html__('URLs de Redirecionamento', 'vsl-player'); ?></label>
+                                <p class="description"><?php echo esc_html__('Insira as URLs de redirecionamento para o botão de oferta.', 'vsl-player'); ?></p>
+                            </div>
+                            <div class="vsl-field-input">
+                                <input type="text" id="vsl_reveal_urls" name="vsl_reveal_urls" value="<?php echo esc_attr($reveal_urls); ?>" class="regular-text" placeholder="https://example.com/offer">
                             </div>
                         </div>
                     </div>
@@ -525,6 +587,22 @@ class VSL_Player_CPT {
             
             if (isset($_POST['vsl_resume_button_hover_color'])) {
                 update_post_meta($post_id, '_vsl_resume_button_hover_color', sanitize_text_field($_POST['vsl_resume_button_hover_color']));
+            }
+            
+            // Salvar opções para Revelar Oferta
+            $enable_reveal_offer = isset($_POST['vsl_enable_reveal_offer']) ? '1' : '0';
+            update_post_meta($post_id, '_vsl_enable_reveal_offer', $enable_reveal_offer);
+            
+            if (isset($_POST['vsl_reveal_class'])) {
+                update_post_meta($post_id, '_vsl_reveal_class', sanitize_text_field($_POST['vsl_reveal_class']));
+            }
+            
+            if (isset($_POST['vsl_reveal_time'])) {
+                update_post_meta($post_id, '_vsl_reveal_time', absint($_POST['vsl_reveal_time']));
+            }
+            
+            if (isset($_POST['vsl_reveal_urls'])) {
+                update_post_meta($post_id, '_vsl_reveal_urls', sanitize_text_field($_POST['vsl_reveal_urls']));
             }
             
             // Generate and save a thumbnail from YouTube if URL is set
@@ -834,6 +912,12 @@ class VSL_Player_CPT {
         $resume_button_color = get_post_meta($post_id, '_vsl_resume_button_color', true);
         $resume_button_hover_color = get_post_meta($post_id, '_vsl_resume_button_hover_color', true);
         
+        // Opções para Revelar Oferta
+        $enable_reveal_offer = get_post_meta($post_id, '_vsl_enable_reveal_offer', true);
+        $reveal_class = get_post_meta($post_id, '_vsl_reveal_class', true);
+        $reveal_time = get_post_meta($post_id, '_vsl_reveal_time', true);
+        $reveal_urls = get_post_meta($post_id, '_vsl_reveal_urls', true);
+        
         // Normalizar o valor de fake_progress para booleano
         $fake_progress = ($fake_progress === '1' || $fake_progress === true);
         $hide_pause_button = ($hide_pause_button === '1' || $hide_pause_button === true);
@@ -850,7 +934,7 @@ class VSL_Player_CPT {
         $player_id = 'vsl-player-' . $post_id;
         
         // Build the player container
-        $output = '<div id="' . esc_attr($player_id) . '" class="vsl-player-container" data-vsl-id="' . esc_attr($post_id) . '" data-video-id="' . esc_attr($video_id) . '" data-player-color="' . esc_attr($player_color) . '" data-fake-progress="' . ($fake_progress ? 'true' : 'false') . '" data-progress-color="' . esc_attr($progress_color) . '" data-pause-style="' . esc_attr($pause_style) . '" data-pause-color="' . esc_attr($pause_color) . '" data-pause-image="' . esc_attr($pause_image_id) . '" data-hide-pause-button="' . ($hide_pause_button ? 'true' : 'false') . '" data-enable-resume-player="' . ($enable_resume_player ? 'true' : 'false') . '" data-resume-overlay-color="' . esc_attr($resume_overlay_color) . '" data-resume-button-color="' . esc_attr($resume_button_color) . '" data-resume-button-hover-color="' . esc_attr($resume_button_hover_color) . '">';
+        $output = '<div id="' . esc_attr($player_id) . '" class="vsl-player-container" data-vsl-id="' . esc_attr($post_id) . '" data-video-id="' . esc_attr($video_id) . '" data-player-color="' . esc_attr($player_color) . '" data-fake-progress="' . ($fake_progress ? 'true' : 'false') . '" data-progress-color="' . esc_attr($progress_color) . '" data-pause-style="' . esc_attr($pause_style) . '" data-pause-color="' . esc_attr($pause_color) . '" data-pause-image="' . esc_attr($pause_image_id) . '" data-hide-pause-button="' . ($hide_pause_button ? 'true' : 'false') . '" data-enable-resume-player="' . ($enable_resume_player ? 'true' : 'false') . '" data-resume-overlay-color="' . esc_attr($resume_overlay_color) . '" data-resume-button-color="' . esc_attr($resume_button_color) . '" data-resume-button-hover-color="' . esc_attr($resume_button_hover_color) . '" data-enable-reveal-offer="' . ($enable_reveal_offer ? 'true' : 'false') . '" data-reveal-class="' . esc_attr($reveal_class) . '" data-reveal-time="' . esc_attr($reveal_time) . '" data-reveal-urls="' . esc_attr($reveal_urls) . '">';
         
         // Get custom SVG with player color
         $player_svg = $this->get_player_svg($post_id);
