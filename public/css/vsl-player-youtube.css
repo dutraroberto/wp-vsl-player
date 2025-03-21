@@ -1,0 +1,205 @@
+/**
+ * VSL Player Otimizado - YouTube Player Styles
+ */
+
+/* Main player container */
+.vsl-player-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    overflow: hidden;
+    background-color: #000;
+    max-width: 100%;
+    margin: 0 auto;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+/* Inner container for YouTube iframe */
+.vsl-player-container > div:first-child,
+.vsl-player-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+/* Esconder o player do YouTube até que esteja pronto para autoplay */
+.vsl-player-loading > div:first-child {
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* Overlays */
+.vsl-start-overlay,
+.vsl-playing-overlay,
+.vsl-pause-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+/* Start overlay */
+.vsl-start-overlay {
+    background-color: rgba(0, 0, 0, 0.4);
+    transition: 0.5s;
+    opacity: 1;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.vsl-start-overlay:hover {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Playing overlay */
+.vsl-playing-overlay {
+    background-color: transparent;
+    pointer-events: auto;
+}
+
+/* Ocultar controles durante a reprodução */
+.vsl-controls {
+    display: none !important;
+}
+
+/* Pause overlay */
+.vsl-pause-overlay {
+    /* Estilo padrão (gradiente) */
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4), #000000 60%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    display: block;
+}
+
+/* Pause overlay quando está com imagem de fundo */
+.vsl-pause-overlay.image-background {
+    /* Sem gradiente, apenas a imagem de fundo que será definida via JavaScript */
+    background: none;
+}
+
+/* Pause overlay quando está com cor sólida */
+.vsl-pause-overlay.solid-background {
+    /* Sem gradiente, apenas a cor que será definida via JavaScript */
+    background: #000000;
+}
+
+
+
+/* Custom SVG button */
+.vsl-play-button-svg {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 35%;
+    z-index: 3;
+    transition: none !important;
+    /* Prevenir qualquer animação durante o carregamento inicial */
+    animation: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform-origin: center center !important;
+    /* Forçar o posicionamento mesmo durante o carregamento inicial */
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-transform: translate(-50%, -50%) !important;
+    -moz-transform: translate(-50%, -50%) !important;
+    -ms-transform: translate(-50%, -50%) !important;
+    
+    /* Desativar todas as transições e animações até que o DOM esteja completamente carregado */
+    -webkit-animation: none !important;
+    -moz-animation: none !important;
+    -o-animation: none !important;
+    -ms-animation: none !important;
+    pointer-events: auto !important;
+    
+    /* Garantir posição fixa mesmo quando o CSS ainda não foi completamente aplicado */
+    transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Aplicar transição apenas em hover */
+.vsl-start-overlay:hover .vsl-play-button-svg {
+    transition: transform 0.3s ease !important;
+    transform: translate(-50%, -50%) scale(1.05) !important;
+    -webkit-transform: translate(-50%, -50%) scale(1.05) !important;
+    -moz-transform: translate(-50%, -50%) scale(1.05) !important;
+    -ms-transform: translate(-50%, -50%) scale(1.05) !important;
+}
+
+/* CSS Play button (fallback) */
+.vsl-play-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2);
+    border: 4px solid #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.vsl-play-button:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.vsl-play-button:after {
+    content: '';
+    display: block;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 15px 0 15px 26px;
+    border-color: transparent transparent transparent #fff;
+    margin-left: 8px;
+}
+
+/* Fallback video for mobile */
+.vsl-fallback-video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767px) {
+    .vsl-play-button {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .vsl-play-button:after {
+        border-width: 12px 0 12px 20px;
+        margin-left: 6px;
+    }
+    
+    .vsl-play-button-svg {
+        width: 50%;
+    }
+}

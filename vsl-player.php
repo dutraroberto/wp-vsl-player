@@ -1,12 +1,12 @@
 <?php
 /**
- * Plugin Name: VSL Player Otimizado
- * Plugin URI: https://mundowp.com.br/plugins/vsl-player
- * Description: Plugin WordPress que integra a API oficial do YouTube para criar um player otimizado para VSLs (Video Sales Letters).
+ * Plugin Name: WP VSL Player
+ * Plugin URI: https://mundowp.com.br/plugins/wp-vsl-player/
+ * Description: Crie facilmente player otimizados para Vendas!
  * Version: 1.0.0
- * Author: MundoWP
+ * Author: Roberto Dutra
  * Author URI: https://mundowp.com.br
- * Text Domain: vsl-player
+ * Text Domain: wp-vsl-player
  * Domain Path: /languages
  * License: GPL-2.0+
  */
@@ -30,3 +30,6 @@ function run_vsl_player() {
     $plugin->run();
 }
 run_vsl_player();
+
+// Register deactivation hook to clean up cron
+register_deactivation_hook(__FILE__, array('VSL_Player_License', 'deactivate'));

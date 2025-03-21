@@ -1,0 +1,35 @@
+/* 
+ * VSL Player Otimizado - Estilos para a barra de progresso falsa 
+ */
+
+.vsl-progress-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background-color: rgba(255, 255, 255, 0.2);
+    z-index: 1000;
+    pointer-events: none;
+    display: none; /* Oculta a barra por padrão */
+}
+
+.vsl-progress-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 100%;
+    width: 0;
+    background-color: #ff0000; /* Cor padrão do YouTube */
+    transition: width 0.1s linear;
+}
+
+/* Quando o vídeo estiver pausado, a barra também deve parecer pausada */
+.vsl-paused .vsl-progress-bar {
+    transition: none;
+}
+
+/* Estilo para quando o mouse passar sobre o player */
+.vsl-player-container:hover .vsl-progress-container {
+    height: 8px;
+}

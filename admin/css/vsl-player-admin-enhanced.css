@@ -1,0 +1,220 @@
+/**
+ * VSL Player Otimizado - Enhanced Admin Styles
+ */
+
+/* Main container styles */
+.vsl-meta-box-container {
+    margin: 0 -12px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+/* Section styles */
+.vsl-settings-section {
+    background: #fff;
+    border: 1px solid #e2e4e7;
+    border-radius: 4px;
+    margin: 16px 12px;
+    padding: 0;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+}
+
+/* Section header */
+.vsl-section-header {
+    border-bottom: 1px solid #e2e4e7;
+    padding: 15px 20px;
+    background: #f9f9f9;
+    display: flex;
+    align-items: center;
+    margin: 0;
+}
+
+.vsl-section-header h2 {
+    margin: 0;
+    padding: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1d2327;
+    flex-grow: 1;
+    line-height: 1.4;
+}
+
+.vsl-section-header .dashicons {
+    margin-right: 8px;
+    color: #2271b1;
+}
+
+/* Section content */
+.vsl-section-content {
+    padding: 20px;
+}
+
+/* Field row styles */
+.vsl-field-row {
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.vsl-field-row:last-child {
+    margin-bottom: 0;
+}
+
+.vsl-field-label {
+    flex: 0 0 200px;
+    margin-right: 20px;
+    margin-top: 4px;
+}
+
+.vsl-field-label label {
+    font-weight: 600;
+    color: #1d2327;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.vsl-field-label p.description {
+    color: #757575;
+    font-size: 13px;
+    margin: 5px 0 0;
+}
+
+.vsl-field-input {
+    flex: 1;
+    min-width: 250px;
+}
+
+/* Input styles */
+.vsl-field-input input[type="text"],
+.vsl-field-input select {
+    width: 100%;
+    max-width: 400px;
+}
+
+/* Toggle switch styles */
+.vsl-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+}
+
+.vsl-toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.vsl-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.vsl-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+.vsl-toggle-switch input:checked + .vsl-toggle-slider {
+    background-color: #2271b1;
+}
+
+.vsl-toggle-switch input:focus + .vsl-toggle-slider {
+    box-shadow: 0 0 1px #2271b1;
+}
+
+.vsl-toggle-switch input:checked + .vsl-toggle-slider:before {
+    transform: translateX(20px);
+}
+
+.vsl-toggle-label {
+    margin-left: 6px;
+    vertical-align: top;
+    line-height: 20px;
+    cursor: pointer;
+}
+
+/* Media preview container */
+.vsl-media-preview-container {
+    margin-top: 10px;
+}
+
+.vsl-media-preview-container img {
+    max-width: 150px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    padding: 2px;
+}
+
+.vsl-media-preview-container .button {
+    margin-top: 8px;
+    margin-right: 5px;
+}
+
+/* Conditional fields */
+.vsl-conditional-field {
+    display: none;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #f0f0f0;
+}
+
+/* Shortcode container */
+.vsl-shortcode-container {
+    background: #f9f9f9;
+    border: 1px solid #e2e4e7;
+    border-radius: 4px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+}
+
+.vsl-shortcode-container input {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-right: 10px;
+    flex-grow: 1;
+    font-family: monospace;
+}
+
+/* Color picker enhancement */
+.wp-picker-container {
+    max-width: 400px;
+}
+
+.wp-picker-container .wp-color-result {
+    margin-bottom: 0;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 782px) {
+    .vsl-field-row {
+        flex-direction: column;
+    }
+    
+    .vsl-field-label {
+        flex: 0 0 100%;
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+    
+    .vsl-field-input {
+        flex: 0 0 100%;
+    }
+}

@@ -75,9 +75,16 @@ class VSL_Player_Admin {
      * Enqueue scripts and styles for the admin area.
      */
     public function enqueue_scripts($hook) {
+        // Only enqueue on our plugin pages
+        $screen = get_current_screen();
+        
+        // Debug - registrar informações da tela 
+        error_log('VSL Player - Screen ID: ' . $screen->id . ', Hook: ' . $hook);
+        
         // Check if we're on one of our plugin pages
         $vsl_admin_pages = array(
             'toplevel_page_edit',
+            'vsl-player_page_vsl-player-license',
             'vsl_player_page_vsl-player-license',
             'vsl_player_page_vsl-player-support',
             'edit-vsl_player',
@@ -86,13 +93,16 @@ class VSL_Player_Admin {
             'vsl_reveal'
         );
         
-        // Only enqueue on our plugin pages
-        $screen = get_current_screen();
-        if (!in_array($screen->id, $vsl_admin_pages) && strpos($hook, 'vsl-player') === false) {
+        // Always load scripts on vsl-player-license page
+        if (isset($_GET['page']) && $_GET['page'] == 'vsl-player-license') {
+            // continuamos com o enfileiramento normal
+        }
+        // Skip if not on our pages
+        else if (!in_array($screen->id, $vsl_admin_pages) && strpos($hook, 'vsl-player') === false) {
             return;
         }
         
-        // Admin CSS
+        // Admin CSS (original)
         wp_enqueue_style(
             'vsl-player-admin', 
             VSL_PLAYER_URL . 'admin/css/vsl-player-admin.css', 
@@ -101,23 +111,82 @@ class VSL_Player_Admin {
             'all'
         );
         
-        // Admin JS
-        wp_enqueue_script(
-            'vsl-player-admin', 
-            VSL_PLAYER_URL . 'admin/js/vsl-player-admin.js', 
-            array('jquery'), 
+        // Enhanced Admin CSS
+        wp_enqueue_style(
+            'vsl-player-admin-enhanced', 
+            VSL_PLAYER_URL . 'admin/css/vsl-player-admin-enhanced.css', 
+            array('vsl-player-admin'), 
             VSL_PLAYER_VERSION, 
-            false
+            'all'
         );
         
-        // Enqueue WordPress media scripts
+        // Admin JS (original)
+        wp_enqueue_script(
+            'vsl-player-admin',
+            VSL_PLAYER_URL . 'admin/js/vsl-player-admin.js',
+            array('jquery'),
+            VSL_PLAYER_VERSION,
+            true
+        );
+        
+        // Enhanced Admin JS
+        wp_enqueue_script(
+            'vsl-player-admin-enhanced',
+            VSL_PLAYER_URL . 'admin/js/vsl-player-admin-enhanced.js',
+            array('jquery', 'wp-color-picker'),
+            VSL_PLAYER_VERSION,
+            true
+        );
+        
+        // WordPress Media Upload
         wp_enqueue_media();
         
+        // WordPress Color Picker
+        wp_enqueue_style('wp-color-picker');
+        wp_enqueue_script('wp-color-picker');
+        
+        // Select2 para o CPT vsl_reveal
+        wp_enqueue_style(
+            'select2',
+            'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css',
+            array(),
+            '4.1.0'
+        );
+        
+        wp_enqueue_script(
+            'select2',
+            'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js',
+            array('jquery'),
+            '4.1.0',
+            true
+        );
+        
         // Localize script for AJAX
-        wp_localize_script('vsl-player-admin', 'vsl_player_params', array(
-            'ajax_url' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('vsl-player-nonce'),
-        ));
+        wp_localize_script(
+            'vsl-player-admin-enhanced',
+            'vsl_player_admin',
+            array(
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('vsl_player_admin_nonce'),
+                'strings' => array(
+                    'choose_video' => __('Escolher Vídeo', 'vsl-player'),
+                    'choose_image' => __('Escolher Imagem', 'vsl-player'),
+                    'use_this' => __('Usar este', 'vsl-player'),
+                    'remove' => __('Remover', 'vsl-player'),
+                    'copied' => __('Copiado!', 'vsl-player'),
+                )
+            )
+        );
+
+        // Localize script for AJAX for vsl-player-admin.js
+        wp_localize_script(
+            'vsl-player-admin',
+            'vsl_player_params',
+            array(
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('vsl_player_admin_nonce')
+            )
+        );
     }
 
     /**
@@ -129,10 +198,10 @@ class VSL_Player_Admin {
             <h1><?php echo esc_html__('VSL Player Otimizado - Licença', 'vsl-player'); ?></h1>
             
             <div class="vsl-license-container">
-                <form method="post" action="options.php">
-                    <?php
-                    settings_fields('vsl_player_license_settings');
-                    do_settings_sections('vsl_player_license_settings');
+                <form method="post" id="vsl-license-form">
+                    <?php 
+                    // Adicionar nonce manualmente
+                    wp_nonce_field('vsl_player_admin_nonce', 'vsl_license_nonce');
                     
                     // Get license data
                     $license_key = get_option('vsl_player_license_key', '');
@@ -179,7 +248,7 @@ class VSL_Player_Admin {
                         <?php endif; ?>
                     </table>
                     
-                    <?php submit_button(__('Salvar e Validar Licença', 'vsl-player')); ?>
+                    <?php submit_button(__('Salvar e Validar Licença', 'vsl-player'), 'primary', 'validate_license_btn'); ?>
                 </form>
                 
                 <div class="license-info">
@@ -195,6 +264,96 @@ class VSL_Player_Admin {
                 </div>
             </div>
         </div>
+
+        <script type="text/javascript">
+        jQuery(document).ready(function($) {
+            // Garantir que este script seja executado apenas na página de licença
+            if (window.location.href.indexOf('vsl-player-license') > -1) {
+                console.log('Script de validação de licença carregado');
+                
+                // Capturar o envio do formulário diretamente
+                $('#vsl-license-form').on('submit', function(e) {
+                    e.preventDefault();
+                    console.log('Formulário enviado!');
+                    
+                    var licenseKey = $('#vsl_player_license_key').val();
+                    
+                    if (!licenseKey) {
+                        alert('Por favor, insira uma chave de licença.');
+                        return;
+                    }
+                    
+                    // Mostrar estado de carregamento
+                    var submitButton = $(this).find('input[type="submit"]');
+                    var originalText = submitButton.val();
+                    submitButton.val('Validando...').prop('disabled', true);
+                    
+                    // Enviar requisição AJAX
+                    $.ajax({
+                        url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                        type: 'POST',
+                        data: {
+                            action: 'vsl_validate_license',
+                            license_key: licenseKey,
+                            nonce: '<?php echo wp_create_nonce('vsl_player_admin_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            console.log('Resposta da validação:', response);
+                            
+                            // Restaurar estado do botão
+                            submitButton.val(originalText).prop('disabled', false);
+                            
+                            if (response.success) {
+                                // Atualizar status da licença visualmente
+                                $('.license-status')
+                                    .removeClass('status-inactive status-expired')
+                                    .addClass('status-active')
+                                    .text('Ativa');
+                                    
+                                // Adicionar data de expiração se fornecida
+                                if (response.data && response.data.expiry) {
+                                    // Verificar se a linha de expiração existe
+                                    var expiryRow = $('th:contains("Expira em")').parent();
+                                    if (expiryRow.length) {
+                                        expiryRow.find('td').text(response.data.expiry);
+                                    } else {
+                                        // Criar nova linha para expiração
+                                        var newRow = $('<tr><th scope="row">Expira em</th><td>' + response.data.expiry + '</td></tr>');
+                                        $('.form-table').append(newRow);
+                                    }
+                                }
+                                
+                                // Mostrar mensagem de sucesso
+                                alert('Licença ativada com sucesso!');
+                            } else {
+                                // Atualizar status da licença visualmente
+                                $('.license-status')
+                                    .removeClass('status-active status-expired')
+                                    .addClass('status-inactive')
+                                    .text('Inativa');
+                                
+                                // Remover linha de expiração se existir
+                                $('th:contains("Expira em")').parent().remove();
+                                
+                                // Mostrar mensagem de erro
+                                alert('Erro ao validar licença. Por favor, verifique a chave e tente novamente.');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Erro na requisição AJAX:', error);
+                            console.log(xhr.responseText);
+                            
+                            // Restaurar estado do botão
+                            submitButton.val(originalText).prop('disabled', false);
+                            
+                            // Mostrar mensagem de erro
+                            alert('Erro na requisição: ' + error + '. Por favor, tente novamente mais tarde.');
+                        }
+                    });
+                });
+            }
+        });
+        </script>
         <?php
     }
 

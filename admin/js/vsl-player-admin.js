@@ -14,6 +14,15 @@
         
         // Initialize license validation
         initLicenseValidation();
+        
+        // Initialize notice dismiss
+        initNoticeDismiss();
+        
+        // Initialize color picker
+        initColorPicker();
+        
+        // Initialize Select2
+        initSelect2();
     });
 
     /**
@@ -115,79 +124,196 @@
      * Initialize license validation
      */
     function initLicenseValidation() {
-        // Handle license form submission via AJAX
-        var licenseForm = $('form').has('input#vsl_player_license_key');
+        // Get current admin page
+        var adminPage = getQueryParam('page');
         
-        if (licenseForm.length) {
-            licenseForm.on('submit', function(e) {
-                e.preventDefault();
-                
-                var licenseKey = $('#vsl_player_license_key').val();
-                
-                if (!licenseKey) {
-                    alert('Por favor, insira uma chave de licença.');
-                    return;
-                }
-                
-                // Show loading state
-                var submitButton = licenseForm.find('input[type="submit"]');
-                var originalText = submitButton.val();
-                submitButton.val('Validando...').prop('disabled', true);
-                
-                // Send AJAX request
-                $.ajax({
-                    url: vsl_player_params.ajax_url,
-                    type: 'POST',
-                    data: {
+        // Log para debug
+        console.log('Página atual:', adminPage);
+        
+        // Handle license form submission via AJAX
+        if (adminPage === 'vsl-player-license') {
+            var licenseForm = $('.vsl-license-container form');
+            
+            // Log para debug
+            console.log('Formulário encontrado:', licenseForm.length);
+            
+            if (licenseForm.length) {
+                licenseForm.on('submit', function(e) {
+                    // Log para debug
+                    console.log('Formulário enviado!');
+                    
+                    e.preventDefault();
+                    
+                    var licenseKey = $('#vsl_player_license_key').val();
+                    
+                    if (!licenseKey) {
+                        // Show inline error message
+                        showAdminNotice('Por favor, insira uma chave de licença.', 'error');
+                        return;
+                    }
+                    
+                    // Show loading state
+                    var submitButton = licenseForm.find('input[type="submit"]');
+                    var originalText = submitButton.val();
+                    submitButton.val('Validando...').prop('disabled', true);
+                    
+                    // Remove any existing notices
+                    $('.notice').remove();
+                    
+                    // Show loading message
+                    showAdminNotice('Validando licença...', 'info');
+                    
+                    // Log para debug
+                    console.log('Enviando AJAX para:', vsl_player_params.ajax_url);
+                    console.log('Dados:', {
                         action: 'vsl_validate_license',
                         license_key: licenseKey,
                         nonce: vsl_player_params.nonce
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            // Update UI with success
-                            $('.license-status')
-                                .removeClass('status-inactive status-expired')
-                                .addClass('status-active')
-                                .text('Ativa');
-                                
-                            // Add expiry date if provided
-                            if (response.data.expiry) {
-                                // Check if expiry row exists
-                                var expiryRow = $('th:contains("Expira em")').parent();
-                                if (expiryRow.length) {
-                                    expiryRow.find('td').text(response.data.expiry);
-                                } else {
-                                    // Create new row for expiry
-                                    var newRow = $('<tr><th scope="row">Expira em</th><td>' + response.data.expiry + '</td></tr>');
-                                    $('.form-table').append(newRow);
+                    });
+                    
+                    // Send AJAX request
+                    $.ajax({
+                        url: vsl_player_params.ajax_url,
+                        type: 'POST',
+                        data: {
+                            action: 'vsl_validate_license',
+                            license_key: licenseKey,
+                            nonce: vsl_player_params.nonce
+                        },
+                        success: function(response) {
+                            // Remove loading notice
+                            $('.notice-info').remove();
+                            
+                            // Reset button state
+                            submitButton.val(originalText).prop('disabled', false);
+                            
+                            if (response.success) {
+                                // Update license status visually
+                                $('.license-status')
+                                    .removeClass('status-inactive status-expired')
+                                    .addClass('status-active')
+                                    .text('Ativa');
+                                    
+                                // Add expiry date if provided
+                                if (response.data && response.data.expiry) {
+                                    // Check if expiry row exists
+                                    var expiryRow = $('th:contains("Expira em")').parent();
+                                    if (expiryRow.length) {
+                                        expiryRow.find('td').text(response.data.expiry);
+                                    } else {
+                                        // Create new row for expiry
+                                        var newRow = $('<tr><th scope="row">Expira em</th><td>' + response.data.expiry + '</td></tr>');
+                                        $('.form-table').append(newRow);
+                                    }
                                 }
-                            }
-                            
-                            alert(response.data.message);
-                        } else {
-                            // Update UI with failure
-                            $('.license-status')
-                                .removeClass('status-active status-expired')
-                                .addClass('status-inactive')
-                                .text('Inativa');
                                 
-                            // Remove expiry row if it exists
-                            $('th:contains("Expira em")').parent().remove();
+                                // Show success message
+                                showAdminNotice(response.data && response.data.message ? response.data.message : 'Licença ativada com sucesso! Seu plugin está pronto para uso.', 'success');
+                            } else {
+                                // Update license status visually
+                                $('.license-status')
+                                    .removeClass('status-active status-expired')
+                                    .addClass('status-inactive')
+                                    .text('Inativa');
+                                
+                                // Remove expiry row if it exists
+                                $('th:contains("Expira em")').parent().remove();
+                                
+                                // Show error message
+                                showAdminNotice(response.data && response.data.message ? response.data.message : 'Erro ao validar licença. Por favor, tente novamente.', 'error');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            // Remove loading notice
+                            $('.notice-info').remove();
                             
-                            alert(response.data.message);
+                            // Reset button state
+                            submitButton.val(originalText).prop('disabled', false);
+                            
+                            // Show error message
+                            showAdminNotice('Erro na requisição: ' + error, 'error');
                         }
-                    },
-                    error: function() {
-                        alert('Ocorreu um erro ao validar a licença. Por favor, tente novamente mais tarde.');
-                    },
-                    complete: function() {
-                        // Restore button state
-                        submitButton.val(originalText).prop('disabled', false);
-                    }
+                    });
                 });
+            }
+        }
+    }
+    
+    /**
+     * Initialize WordPress Color Picker
+     */
+    function initColorPicker() {
+        // Initialize color picker on all color-picker fields
+        if ($.fn.wpColorPicker) {
+            $('.color-picker').wpColorPicker({
+                // Define default options
+                defaultColor: '#617be5',
+                change: function(event, ui) {
+                    // Optional: Do something when color changes
+                },
+                clear: function() {
+                    // Optional: Do something when color is cleared
+                },
+                hide: true,
+                palettes: true
             });
         }
+    }
+
+    /**
+     * Initialize Select2
+     */
+    function initSelect2() {
+        // Initialize Select2 on all select2 fields
+        if ($.fn.select2) {
+            $('.vsl-select2-pages').select2({
+                placeholder: "Selecione as páginas...",
+                allowClear: true,
+                width: '100%',
+                dropdownAutoWidth: true,
+                closeOnSelect: false
+            });
+        }
+    }
+
+    /**
+     * Show WordPress-style admin notice
+     */
+    function showAdminNotice(message, type) {
+        // Convert type to WordPress notice class
+        var noticeClass = 'notice-' + (type === 'error' ? 'error' : (type === 'success' ? 'success' : 'info'));
+        
+        // Create notice HTML
+        var noticeHtml = '<div class="notice ' + noticeClass + ' is-dismissible">' +
+                         '<p>' + (type === 'error' ? '❌ Erro: ' : (type === 'success' ? '✅ ' : '⏳ ')) + message + '</p>' +
+                         '<button type="button" class="notice-dismiss"><span class="screen-reader-text">Dispensar este aviso.</span></button>' +
+                         '</div>';
+                         
+        // Insert notice at the top of the page
+        if ($('.wrap > h1').length) {
+            $(noticeHtml).insertAfter('.wrap > h1');
+        } else {
+            $('.wrap').prepend(noticeHtml);
+        }
+    }
+    
+    /**
+     * Initialize notice dismiss functionality
+     */
+    function initNoticeDismiss() {
+        $(document).on('click', '.notice-dismiss', function() {
+            $(this).closest('.notice').fadeOut(300, function() {
+                $(this).remove();
+            });
+        });
+    }
+    
+    /**
+     * Helper function to get query parameters from URL
+     */
+    function getQueryParam(param) {
+        var urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
     }
 
 })(jQuery);

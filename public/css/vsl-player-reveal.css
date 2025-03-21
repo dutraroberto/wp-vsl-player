@@ -1,0 +1,29 @@
+/**
+ * VSL Player Otimizado - Content Reveal Styles
+ */
+
+/* Initially hidden elements (handled by JS) */
+.vsl-hidden {
+    display: none !important;
+}
+
+/* Elements that have been revealed */
+.vsl-revealed {
+    animation: vsl-fade-in 0.3s ease-in-out;
+    display: block !important;
+}
+
+/* Animation for revealing elements */
+@keyframes vsl-fade-in {
+    0% { 
+        opacity: 0;
+    }
+    100% { 
+        opacity: 1;
+    }
+}
+
+/* Make sure transitions work properly with display changes */
+.vsl-transition {
+    transition: opacity 1s ease-in-out, transform 1s ease-in-out;
+}

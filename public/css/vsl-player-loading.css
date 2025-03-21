@@ -1,0 +1,55 @@
+/**
+ * Estilos para a tela de carregamento do VSL Player
+ */
+
+.vsl-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.vsl-loader {
+    width: 48px;
+    height: 48px;
+    border: 5px solid #FFF;
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+    animation: vsl-rotation 1s linear infinite;
+}
+
+@keyframes vsl-rotation {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Quando o player estiver pronto, esconda a tela de carregamento */
+.vsl-player-ready .vsl-loading-overlay {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Esconda o iframe do YouTube até que ele esteja pronto */
+.vsl-player-container:not(.vsl-player-ready) .vsl-youtube-inner {
+    opacity: 0;
+}
+
+/* Quando o player estiver pronto, mostre o iframe com uma transição suave */
+.vsl-player-ready .vsl-youtube-inner {
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
