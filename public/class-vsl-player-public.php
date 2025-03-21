@@ -104,6 +104,22 @@ class VSL_Player_Public {
             true
         );
         
+        // Registrar o CSS e JS do recurso de revelar oferta
+        wp_register_style(
+            'vsl-player-offer-reveal',
+            VSL_PLAYER_URL . 'public/css/vsl-player-offer-reveal.css',
+            array(),
+            VSL_PLAYER_VERSION
+        );
+        
+        wp_register_script(
+            'vsl-player-offer-reveal',
+            VSL_PLAYER_URL . 'public/js/vsl-player-offer-reveal.js',
+            array('jquery', 'vsl-player-youtube'),
+            VSL_PLAYER_VERSION,
+            true
+        );
+        
         // Collect all VSL Player data for the page
         $players_data = $this->get_vsl_players_data();
         
@@ -203,6 +219,12 @@ class VSL_Player_Public {
         $resume_button_color = get_post_meta($post_id, '_vsl_resume_button_color', true) ?: '#617be5';
         $resume_button_hover_color = get_post_meta($post_id, '_vsl_resume_button_hover_color', true) ?: '#8950C7';
         
+        // Opções de revelar oferta
+        $enable_offer_reveal = get_post_meta($post_id, '_vsl_enable_offer_reveal', true) === '1';
+        $offer_reveal_class = get_post_meta($post_id, '_vsl_offer_reveal_class', true);
+        $offer_reveal_time = get_post_meta($post_id, '_vsl_offer_reveal_time', true) ?: '0';
+        $offer_reveal_persist = get_post_meta($post_id, '_vsl_offer_reveal_persist', true) === '1';
+        
         // Extract YouTube video ID from URL
         $video_id = $this->get_youtube_video_id($youtube_url);
         if (!$video_id) {
@@ -234,6 +256,14 @@ class VSL_Player_Public {
         $output .= 'data-resume-overlay-color="' . esc_attr($resume_overlay_color) . '" ';
         $output .= 'data-resume-button-color="' . esc_attr($resume_button_color) . '" ';
         $output .= 'data-resume-button-hover-color="' . esc_attr($resume_button_hover_color) . '" ';
+        
+        // Atributos para revelar oferta
+        $output .= 'data-enable-offer-reveal="' . ($enable_offer_reveal ? 'true' : 'false') . '" ';
+        if ($enable_offer_reveal) {
+            $output .= 'data-offer-reveal-class="' . esc_attr($offer_reveal_class) . '" ';
+            $output .= 'data-offer-reveal-time="' . esc_attr($offer_reveal_time) . '" ';
+            $output .= 'data-offer-reveal-persist="' . ($offer_reveal_persist ? 'true' : 'false') . '" ';
+        }
         
         $output .= '>';
         
@@ -273,6 +303,12 @@ class VSL_Player_Public {
         if ($enable_resume_player) {
             wp_enqueue_style('vsl-player-resume');
             wp_enqueue_script('vsl-player-resume');
+        }
+        
+        // Se o offer reveal estiver ativado, carregue os arquivos relacionados
+        if ($enable_offer_reveal) {
+            wp_enqueue_style('vsl-player-offer-reveal');
+            wp_enqueue_script('vsl-player-offer-reveal');
         }
         
         return $output;

@@ -348,6 +348,109 @@ class VSL_Player_CPT {
                 </div>
             </div>
             
+            <!-- SEÇÃO: REVELAR OFERTA -->
+            <div class="vsl-settings-section">
+                <div class="vsl-section-header">
+                    <span class="dashicons dashicons-visibility"></span>
+                    <h2><?php echo esc_html__('Revelar oferta', 'vsl-player'); ?></h2>
+                </div>
+                <div class="vsl-section-content">
+                    <!-- Ativar Revelação de Ofertas -->
+                    <div class="vsl-field-row">
+                        <div class="vsl-field-label">
+                            <label><?php echo esc_html__('Ativar Revelação de Ofertas', 'vsl-player'); ?></label>
+                            <p class="description"><?php echo esc_html__('Se ativado, elementos com a classe CSS definida serão revelados após o tempo especificado de reprodução do vídeo.', 'vsl-player'); ?></p>
+                        </div>
+                        <div class="vsl-field-input">
+                            <?php 
+                            $enable_offer_reveal = get_post_meta($post->ID, '_vsl_enable_offer_reveal', true);
+                            ?>
+                            <label class="vsl-toggle-switch">
+                                <input type="checkbox" id="vsl_enable_offer_reveal" name="vsl_enable_offer_reveal" value="1" <?php checked($enable_offer_reveal, '1'); ?> class="vsl-conditional-control" data-control-group="vsl-offer-reveal-options">
+                                <span class="vsl-toggle-slider"></span>
+                            </label>
+                            <span class="vsl-toggle-label"><?php echo esc_html__('Ativar', 'vsl-player'); ?></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Opções de Revelação de Ofertas (visíveis apenas quando a funcionalidade está ativada) -->
+                    <div class="vsl-conditional-field vsl-offer-reveal-options">
+                        <div class="vsl-field-row">
+                            <div class="vsl-field-label">
+                                <label for="vsl_offer_reveal_class"><?php echo esc_html__('Classe do Elemento', 'vsl-player'); ?></label>
+                                <p class="description"><?php echo esc_html__('Insira a classe CSS do elemento que será revelado (ex.: .oferta-especial)', 'vsl-player'); ?></p>
+                            </div>
+                            <div class="vsl-field-input">
+                                <?php 
+                                $offer_reveal_class = get_post_meta($post->ID, '_vsl_offer_reveal_class', true);
+                                ?>
+                                <input type="text" id="vsl_offer_reveal_class" name="vsl_offer_reveal_class" value="<?php echo esc_attr($offer_reveal_class); ?>" 
+                                      class="regular-text" placeholder=".oferta-especial">
+                            </div>
+                        </div>
+                        
+                        <div class="vsl-field-row">
+                            <div class="vsl-field-label">
+                                <label for="vsl_offer_reveal_time"><?php echo esc_html__('Tempo até revelar', 'vsl-player'); ?></label>
+                                <p class="description"><?php echo esc_html__('Defina o tempo em segundos até que o elemento seja revelado.', 'vsl-player'); ?></p>
+                            </div>
+                            <div class="vsl-field-input">
+                                <?php 
+                                $offer_reveal_time = get_post_meta($post->ID, '_vsl_offer_reveal_time', true) ?: '0';
+                                ?>
+                                <input type="number" id="vsl_offer_reveal_time" name="vsl_offer_reveal_time" value="<?php echo esc_attr($offer_reveal_time); ?>" 
+                                       min="0" step="1" class="small-text">
+                            </div>
+                        </div>
+                        
+                        <div class="vsl-field-row">
+                            <div class="vsl-field-label">
+                                <label for="vsl_offer_reveal_pages"><?php echo esc_html__('Selecionar Página', 'vsl-player'); ?></label>
+                                <p class="description"><?php echo esc_html__('Selecione as páginas onde a funcionalidade de revelação será ativada.', 'vsl-player'); ?></p>
+                            </div>
+                            <div class="vsl-field-input">
+                                <?php 
+                                $selected_pages = get_post_meta($post->ID, '_vsl_offer_reveal_pages', true);
+                                if (!is_array($selected_pages)) {
+                                    $selected_pages = array();
+                                }
+                                ?>
+                                <select name="vsl_offer_reveal_pages[]" id="vsl_offer_reveal_pages" multiple="multiple" class="vsl-select2-pages" style="width: 100%;">
+                                    <?php
+                                    $pages = get_pages(array('sort_column' => 'post_title', 'sort_order' => 'ASC'));
+                                    foreach ($pages as $page) {
+                                        printf(
+                                            '<option value="%s" %s>%s</option>',
+                                            esc_attr($page->ID),
+                                            in_array($page->ID, $selected_pages) ? 'selected="selected"' : '',
+                                            esc_html($page->post_title)
+                                        );
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="vsl-field-row">
+                            <div class="vsl-field-label">
+                                <label><?php echo esc_html__('Persistência de Visualização', 'vsl-player'); ?></label>
+                                <p class="description"><?php echo esc_html__('Manter elementos revelados visíveis após recarregamento da página.', 'vsl-player'); ?></p>
+                            </div>
+                            <div class="vsl-field-input">
+                                <?php 
+                                $offer_reveal_persist = get_post_meta($post->ID, '_vsl_offer_reveal_persist', true);
+                                ?>
+                                <label class="vsl-toggle-switch">
+                                    <input type="checkbox" id="vsl_offer_reveal_persist" name="vsl_offer_reveal_persist" value="1" <?php checked($offer_reveal_persist, '1'); ?>>
+                                    <span class="vsl-toggle-slider"></span>
+                                </label>
+                                <span class="vsl-toggle-label"><?php echo esc_html__('Ativar', 'vsl-player'); ?></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- SEÇÃO: SHORTCODE -->
             <div class="vsl-settings-section">
                 <div class="vsl-section-header">
@@ -526,6 +629,25 @@ class VSL_Player_CPT {
             if (isset($_POST['vsl_resume_button_hover_color'])) {
                 update_post_meta($post_id, '_vsl_resume_button_hover_color', sanitize_text_field($_POST['vsl_resume_button_hover_color']));
             }
+            
+            // Salvar opções de revelar oferta
+            $enable_offer_reveal = isset($_POST['vsl_enable_offer_reveal']) ? '1' : '0';
+            update_post_meta($post_id, '_vsl_enable_offer_reveal', $enable_offer_reveal);
+            
+            if (isset($_POST['vsl_offer_reveal_class'])) {
+                update_post_meta($post_id, '_vsl_offer_reveal_class', sanitize_text_field($_POST['vsl_offer_reveal_class']));
+            }
+            
+            if (isset($_POST['vsl_offer_reveal_time'])) {
+                update_post_meta($post_id, '_vsl_offer_reveal_time', absint($_POST['vsl_offer_reveal_time']));
+            }
+            
+            if (isset($_POST['vsl_offer_reveal_pages'])) {
+                update_post_meta($post_id, '_vsl_offer_reveal_pages', array_map('absint', $_POST['vsl_offer_reveal_pages']));
+            }
+            
+            $offer_reveal_persist = isset($_POST['vsl_offer_reveal_persist']) ? '1' : '0';
+            update_post_meta($post_id, '_vsl_offer_reveal_persist', $offer_reveal_persist);
             
             // Generate and save a thumbnail from YouTube if URL is set
             if (!empty($_POST['vsl_youtube_url'])) {

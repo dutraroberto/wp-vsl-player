@@ -1,0 +1,15 @@
+/**
+ * VSL Player Offer Reveal CSS
+ * 
+ * Styling for elements that will be revealed based on video time
+ */
+
+/* Hide scrollbar for better appearance */
+::-webkit-scrollbar {
+    display: none;
+}
+
+/* Smooth transition when revealing elements */
+[class*="reveal-"] {
+    transition: opacity 1s ease-in-out;
+}
