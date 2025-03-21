@@ -35,7 +35,6 @@
         // Handler específico para o botão "Remover" do vídeo de fallback
         $('#vsl_fallback_video_remove').on('click', function(e) {
             e.preventDefault();
-            console.log('Botão de remoção de fallback clicado');
             $('#vsl_fallback_video').val('');
             $('#vsl_fallback_video_preview').empty();
         });

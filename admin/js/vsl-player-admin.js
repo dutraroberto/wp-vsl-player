@@ -127,21 +127,12 @@
         // Get current admin page
         var adminPage = getQueryParam('page');
         
-        // Log para debug
-        console.log('Página atual:', adminPage);
-        
         // Handle license form submission via AJAX
         if (adminPage === 'vsl-player-license') {
             var licenseForm = $('.vsl-license-container form');
             
-            // Log para debug
-            console.log('Formulário encontrado:', licenseForm.length);
-            
             if (licenseForm.length) {
                 licenseForm.on('submit', function(e) {
-                    // Log para debug
-                    console.log('Formulário enviado!');
-                    
                     e.preventDefault();
                     
                     var licenseKey = $('#vsl_player_license_key').val();
@@ -162,14 +153,6 @@
                     
                     // Show loading message
                     showAdminNotice('Validando licença...', 'info');
-                    
-                    // Log para debug
-                    console.log('Enviando AJAX para:', vsl_player_params.ajax_url);
-                    console.log('Dados:', {
-                        action: 'vsl_validate_license',
-                        license_key: licenseKey,
-                        nonce: vsl_player_params.nonce
-                    });
                     
                     // Send AJAX request
                     $.ajax({

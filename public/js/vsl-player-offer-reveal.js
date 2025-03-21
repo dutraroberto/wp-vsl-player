@@ -40,7 +40,6 @@
         const elements = document.querySelectorAll(elementSelector);
         
         if (elements.length === 0) {
-            console.log(`[VSL Player] No elements found with selector: ${elementSelector}`);
             return;
         }
 

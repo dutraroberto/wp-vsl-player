@@ -427,8 +427,6 @@
         
         // Ouvir o evento de inicialização do player a partir do Resume Player
         $(document).on('VSL.InitializePlayer', function(event, $container, vslId, startTime) {
-            console.log('VSL Player: Received initialization request from Resume Player for video ' + vslId + ' with start time ' + startTime);
-            
             // Obter o containerId
             var containerId = $container.attr('id');
             
