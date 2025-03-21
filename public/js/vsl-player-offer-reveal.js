@@ -9,6 +9,9 @@
     // Store revealed elements to avoid revealing them again
     const revealedElements = {};
     
+    // Store the time polling interval instances
+    const timePollingIntervals = {};
+    
     // Track if elements were previously shown (for persistence)
     const checkPersistentElements = function(revealClass, vslId) {
         const storageKey = `vsl_revealed_${vslId}_${revealClass.replace(/\W/g, '_')}`;
@@ -105,7 +108,10 @@
                 document.head.appendChild(style);
             }
             
-            // Listen for messages from the YouTube iframe
+            // Setup active polling for video time
+            setupTimePolling($container, vslId, revealClass, revealTime, persist);
+            
+            // Also listen for messages from the YouTube iframe (for backwards compatibility)
             window.addEventListener('message', function(event) {
                 let data;
                 
@@ -135,6 +141,45 @@
                 }
             });
         });
+    };
+    
+    // Setup active polling for video time
+    const setupTimePolling = function($container, vslId, revealClass, revealTime, persist) {
+        const containerId = $container.attr('id');
+        
+        if (!containerId) {
+            return;
+        }
+        
+        // Clear any existing interval
+        if (timePollingIntervals[containerId]) {
+            clearInterval(timePollingIntervals[containerId]);
+        }
+        
+        // Poll every 500ms to check video time
+        timePollingIntervals[containerId] = setInterval(function() {
+            // Skip if already revealed
+            if (revealedElements[`${vslId}_${revealClass}`]) {
+                clearInterval(timePollingIntervals[containerId]);
+                return;
+            }
+            
+            // Access the player through window.vslPlayers global object
+            if (window.vslPlayers && window.vslPlayers[containerId]) {
+                try {
+                    const player = window.vslPlayers[containerId];
+                    const currentTime = player.getCurrentTime();
+                    
+                    // Check if we should reveal elements
+                    if (currentTime >= revealTime) {
+                        revealElements(revealClass, persist, vslId);
+                        clearInterval(timePollingIntervals[containerId]);
+                    }
+                } catch (e) {
+                    console.error('[VSL Player] Error accessing player:', e);
+                }
+            }
+        }, 500);
     };
     
     // Initialize when document is ready

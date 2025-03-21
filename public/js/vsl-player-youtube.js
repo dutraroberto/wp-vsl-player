@@ -7,6 +7,9 @@
     // Store player instances
     var players = {};
     
+    // Make players accessible globally for other scripts
+    window.vslPlayers = players;
+    
     // Initialize when the document is ready
     $(document).ready(function() {
         if (typeof vslPlayerData === 'undefined') {
