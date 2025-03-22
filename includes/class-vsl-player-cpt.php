@@ -464,123 +464,94 @@ class VSL_Player_CPT {
                             <p class="description"><?php echo esc_html__('Configure eventos de conversão em pontos específicos do vídeo.', 'vsl-player'); ?></p>
                         </div>
                         <div class="vsl-field-input">
-                            <div id="vsl-conversion-events-container">
-                                <?php
-                                // Recupera eventos de conversão existentes (será um array de arrays)
-                                $conversion_events = get_post_meta($post->ID, '_vsl_conversion_events', true);
-                                if (!is_array($conversion_events)) {
-                                    $conversion_events = array();
-                                }
-                                
-                                // Se não houver eventos, mostra um evento vazio para o usuário preencher
-                                if (empty($conversion_events)) {
-                                    $event_id = 'event-' . uniqid();
+                            <!-- Switcher mestre para ativar/desativar conversões -->
+                            <div class="vsl-field-toggle-master">
+                                <label class="vsl-toggle-switch">
+                                    <?php 
+                                    $conversions_enabled = get_post_meta($post->ID, '_vsl_conversions_enabled', true);
+                                    $conversions_enabled = ($conversions_enabled === '') ? '1' : $conversions_enabled; // Ativado por padrão
                                     ?>
-                                    <div class="vsl-conversion-event" id="<?php echo esc_attr($event_id); ?>">
-                                        <div class="vsl-conversion-event-header">
-                                            <h4><?php echo esc_html__('Evento de Conversão', 'vsl-player'); ?></h4>
-                                            <button type="button" class="vsl-remove-event button"><?php echo esc_html__('Remover', 'vsl-player'); ?></button>
-                                        </div>
-                                        <div class="vsl-conversion-event-content">
-                                            <div class="vsl-event-field">
-                                                <label for="<?php echo esc_attr($event_id); ?>-name"><?php echo esc_html__('Nome do Evento', 'vsl-player'); ?></label>
-                                                <input type="text" id="<?php echo esc_attr($event_id); ?>-name" 
-                                                       name="vsl_conversion_events[<?php echo esc_attr($event_id); ?>][name]" 
-                                                       class="widefat" placeholder="<?php echo esc_attr__('Ex: Assinar Newsletter', 'vsl-player'); ?>" required>
-                                            </div>
-                                            <div class="vsl-event-field">
-                                                <label for="<?php echo esc_attr($event_id); ?>-time"><?php echo esc_html__('Tempo (segundos)', 'vsl-player'); ?></label>
-                                                <input type="number" id="<?php echo esc_attr($event_id); ?>-time" 
-                                                       name="vsl_conversion_events[<?php echo esc_attr($event_id); ?>][time]" 
-                                                       class="small-text" min="0" step="1" value="0" required>
-                                            </div>
-                                            <div class="vsl-event-integrations">
-                                                <h5><?php echo esc_html__('Integrações', 'vsl-player'); ?></h5>
-                                                <div class="vsl-event-integration-option">
-                                                    <label class="vsl-toggle-switch">
-                                                        <input type="checkbox" name="vsl_conversion_events[<?php echo esc_attr($event_id); ?>][ga]" value="1">
-                                                        <span class="vsl-toggle-slider"></span>
-                                                    </label>
-                                                    <span class="vsl-toggle-label"><?php echo esc_html__('Google Analytics (GA4)', 'vsl-player'); ?></span>
-                                                </div>
-                                                <div class="vsl-event-integration-option">
-                                                    <label class="vsl-toggle-switch">
-                                                        <input type="checkbox" name="vsl_conversion_events[<?php echo esc_attr($event_id); ?>][gads]" value="1">
-                                                        <span class="vsl-toggle-slider"></span>
-                                                    </label>
-                                                    <span class="vsl-toggle-label"><?php echo esc_html__('Google Ads (Conversões)', 'vsl-player'); ?></span>
-                                                </div>
-                                                <div class="vsl-event-integration-option">
-                                                    <label class="vsl-toggle-switch">
-                                                        <input type="checkbox" name="vsl_conversion_events[<?php echo esc_attr($event_id); ?>][fbpixel]" value="1">
-                                                        <span class="vsl-toggle-slider"></span>
-                                                    </label>
-                                                    <span class="vsl-toggle-label"><?php echo esc_html__('Facebook Pixel', 'vsl-player'); ?></span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <?php
-                                } else {
-                                    // Exibe eventos existentes
-                                    foreach ($conversion_events as $event_id => $event_data) {
-                                        ?>
-                                        <div class="vsl-conversion-event" id="<?php echo esc_attr($event_id); ?>">
-                                            <div class="vsl-conversion-event-header">
-                                                <h4><?php echo esc_html__('Evento de Conversão', 'vsl-player'); ?></h4>
-                                                <button type="button" class="vsl-remove-event button"><?php echo esc_html__('Remover', 'vsl-player'); ?></button>
-                                            </div>
-                                            <div class="vsl-conversion-event-content">
-                                                <div class="vsl-event-field">
-                                                    <label for="<?php echo esc_attr($event_id); ?>-name"><?php echo esc_html__('Nome do Evento', 'vsl-player'); ?></label>
-                                                    <input type="text" id="<?php echo esc_attr($event_id); ?>-name" 
-                                                           name="vsl_conversion_events[<?php echo esc_attr($event_id); ?>][name]" 
-                                                           class="widefat" value="<?php echo esc_attr($event_data['name']); ?>" required>
-                                                </div>
-                                                <div class="vsl-event-field">
-                                                    <label for="<?php echo esc_attr($event_id); ?>-time"><?php echo esc_html__('Tempo (segundos)', 'vsl-player'); ?></label>
-                                                    <input type="number" id="<?php echo esc_attr($event_id); ?>-time" 
-                                                           name="vsl_conversion_events[<?php echo esc_attr($event_id); ?>][time]" 
-                                                           class="small-text" min="0" step="1" 
-                                                           value="<?php echo esc_attr($event_data['time']); ?>" required>
-                                                </div>
-                                                <div class="vsl-event-integrations">
-                                                    <h5><?php echo esc_html__('Integrações', 'vsl-player'); ?></h5>
-                                                    <div class="vsl-event-integration-option">
-                                                        <label class="vsl-toggle-switch">
-                                                            <input type="checkbox" name="vsl_conversion_events[<?php echo esc_attr($event_id); ?>][ga]" 
-                                                                   value="1" <?php checked(isset($event_data['ga']) && $event_data['ga'] === '1'); ?>>
-                                                            <span class="vsl-toggle-slider"></span>
-                                                        </label>
-                                                        <span class="vsl-toggle-label"><?php echo esc_html__('Google Analytics (GA4)', 'vsl-player'); ?></span>
-                                                    </div>
-                                                    <div class="vsl-event-integration-option">
-                                                        <label class="vsl-toggle-switch">
-                                                            <input type="checkbox" name="vsl_conversion_events[<?php echo esc_attr($event_id); ?>][gads]" 
-                                                                   value="1" <?php checked(isset($event_data['gads']) && $event_data['gads'] === '1'); ?>>
-                                                            <span class="vsl-toggle-slider"></span>
-                                                        </label>
-                                                        <span class="vsl-toggle-label"><?php echo esc_html__('Google Ads (Conversões)', 'vsl-player'); ?></span>
-                                                    </div>
-                                                    <div class="vsl-event-integration-option">
-                                                        <label class="vsl-toggle-switch">
-                                                            <input type="checkbox" name="vsl_conversion_events[<?php echo esc_attr($event_id); ?>][fbpixel]" 
-                                                                   value="1" <?php checked(isset($event_data['fbpixel']) && $event_data['fbpixel'] === '1'); ?>>
-                                                            <span class="vsl-toggle-slider"></span>
-                                                        </label>
-                                                        <span class="vsl-toggle-label"><?php echo esc_html__('Facebook Pixel', 'vsl-player'); ?></span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <?php
-                                    }
-                                }
-                                ?>
+                                    <input type="checkbox" name="vsl_conversions_enabled" id="vsl-conversions-master-toggle" 
+                                           value="1" <?php checked($conversions_enabled, '1'); ?>>
+                                    <span class="vsl-toggle-slider"></span>
+                                </label>
+                                <span class="vsl-toggle-label"><?php echo esc_html__('Ativar rastreamento de conversões', 'vsl-player'); ?></span>
                             </div>
-                            <button type="button" id="vsl-add-conversion-event" class="button button-primary">
-                                <span class="dashicons dashicons-plus-alt"></span> <?php echo esc_html__('Adicionar Novo Evento', 'vsl-player'); ?>
-                            </button>
+                            
+                            <div id="vsl-conversion-events-wrapper" class="<?php echo $conversions_enabled === '1' ? '' : 'hidden'; ?>">
+                                <div id="vsl-conversion-events-container">
+                                    <?php
+                                    // Recupera eventos de conversão existentes (será um array de arrays)
+                                    $conversion_events = get_post_meta($post->ID, '_vsl_conversion_events', true);
+                                    if (!is_array($conversion_events)) {
+                                        $conversion_events = array();
+                                    }
+                                    
+                                    // Exibe eventos existentes
+                                    if (!empty($conversion_events)) {
+                                        foreach ($conversion_events as $event_id => $event_data) {
+                                            ?>
+                                            <div class="vsl-conversion-event" id="<?php echo esc_attr($event_id); ?>">
+                                                <div class="vsl-conversion-event-header">
+                                                    <h4><?php echo esc_html__('Evento de Conversão', 'vsl-player'); ?></h4>
+                                                    <button type="button" class="vsl-remove-event button"><?php echo esc_html__('Remover', 'vsl-player'); ?></button>
+                                                </div>
+                                                <div class="vsl-conversion-event-content">
+                                                    <div class="vsl-event-field">
+                                                        <label for="<?php echo esc_attr($event_id); ?>-name"><?php echo esc_html__('Nome do Evento', 'vsl-player'); ?></label>
+                                                        <input type="text" id="<?php echo esc_attr($event_id); ?>-name" 
+                                                               name="vsl_conversion_events[<?php echo esc_attr($event_id); ?>][name]" 
+                                                               class="widefat" placeholder="<?php echo esc_attr__('Ex: View_Oferta', 'vsl-player'); ?>" 
+                                                               value="<?php echo esc_attr($event_data['name']); ?>" required>
+                                                    </div>
+                                                    <div class="vsl-event-field">
+                                                        <label for="<?php echo esc_attr($event_id); ?>-time"><?php echo esc_html__('Tempo (segundos)', 'vsl-player'); ?></label>
+                                                        <input type="number" id="<?php echo esc_attr($event_id); ?>-time" 
+                                                               name="vsl_conversion_events[<?php echo esc_attr($event_id); ?>][time]" 
+                                                               class="small-text" min="0" step="1" 
+                                                               value="<?php echo absint($event_data['time']); ?>" required>
+                                                    </div>
+                                                    <div class="vsl-event-integrations">
+                                                        <h5><?php echo esc_html__('Integrações', 'vsl-player'); ?></h5>
+                                                        <div class="vsl-event-integration-option">
+                                                            <label class="vsl-toggle-switch">
+                                                                <input type="checkbox" name="vsl_conversion_events[<?php echo esc_attr($event_id); ?>][ga]" 
+                                                                      value="1" <?php checked($event_data['ga'], '1'); ?>>
+                                                                <span class="vsl-toggle-slider"></span>
+                                                            </label>
+                                                            <span class="vsl-toggle-label"><?php echo esc_html__('Google Analytics (GA4)', 'vsl-player'); ?></span>
+                                                        </div>
+                                                        <div class="vsl-event-integration-option">
+                                                            <label class="vsl-toggle-switch">
+                                                                <input type="checkbox" name="vsl_conversion_events[<?php echo esc_attr($event_id); ?>][gads]" 
+                                                                       value="1" <?php checked($event_data['gads'], '1'); ?>>
+                                                                <span class="vsl-toggle-slider"></span>
+                                                            </label>
+                                                            <span class="vsl-toggle-label"><?php echo esc_html__('Google Ads (Conversões)', 'vsl-player'); ?></span>
+                                                        </div>
+                                                        <div class="vsl-event-integration-option">
+                                                            <label class="vsl-toggle-switch">
+                                                                <input type="checkbox" name="vsl_conversion_events[<?php echo esc_attr($event_id); ?>][fbpixel]" 
+                                                                       value="1" <?php checked($event_data['fbpixel'], '1'); ?>>
+                                                                <span class="vsl-toggle-slider"></span>
+                                                            </label>
+                                                            <span class="vsl-toggle-label"><?php echo esc_html__('Facebook Pixel', 'vsl-player'); ?></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <?php
+                                        }
+                                    }
+                                    ?>
+                                </div>
+                                
+                                <div class="vsl-field-buttons">
+                                    <button type="button" id="vsl-add-conversion-event" class="button button-secondary">
+                                        <span class="dashicons dashicons-plus-alt"></span> <?php echo esc_html__('Adicionar Novo Evento', 'vsl-player'); ?>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -798,6 +769,10 @@ class VSL_Player_CPT {
                 }
                 update_post_meta($post_id, '_vsl_conversion_events', $conversion_events);
             }
+            
+            // Salvar opção de ativar rastreamento de conversões
+            $conversions_enabled = isset($_POST['vsl_conversions_enabled']) ? '1' : '0';
+            update_post_meta($post_id, '_vsl_conversions_enabled', $conversions_enabled);
             
             // Generate and save a thumbnail from YouTube if URL is set
             if (!empty($_POST['vsl_youtube_url'])) {

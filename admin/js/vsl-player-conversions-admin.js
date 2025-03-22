@@ -7,6 +7,15 @@
     'use strict';
 
     $(document).ready(function() {
+        // Controle do switcher mestre
+        $('#vsl-conversions-master-toggle').on('change', function() {
+            if ($(this).is(':checked')) {
+                $('#vsl-conversion-events-wrapper').removeClass('hidden');
+            } else {
+                $('#vsl-conversion-events-wrapper').addClass('hidden');
+            }
+        });
+        
         // Add new conversion event
         $('#vsl-add-conversion-event').on('click', function() {
             const eventId = 'event-' + Math.random().toString(36).substr(2, 9);
@@ -58,9 +67,6 @@
             `;
             
             $('#vsl-conversion-events-container').append(template);
-            
-            // Apply any special styles or behaviors
-            initializeConversionFields();
         });
         
         // Remove conversion event (delegated to handle dynamically added events)

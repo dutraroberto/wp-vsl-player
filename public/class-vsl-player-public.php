@@ -242,8 +242,10 @@ class VSL_Player_Public {
         $offer_reveal_persist = get_post_meta($post_id, '_vsl_offer_reveal_persist', true) === '1';
         
         // Eventos de conversão
+        $conversions_enabled = get_post_meta($post_id, '_vsl_conversions_enabled', true);
+        $conversions_enabled = ($conversions_enabled === '') ? '1' : $conversions_enabled; // Ativado por padrão
         $conversion_events = get_post_meta($post_id, '_vsl_conversion_events', true);
-        $has_conversion_events = !empty($conversion_events) && is_array($conversion_events);
+        $has_conversion_events = $conversions_enabled === '1' && is_array($conversion_events) && !empty($conversion_events);
         
         // Extract YouTube video ID from URL
         $video_id = $this->get_youtube_video_id($youtube_url);

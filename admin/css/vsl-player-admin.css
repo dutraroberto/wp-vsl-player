@@ -284,3 +284,70 @@
     border-radius: 4px;
     padding: 4px 8px;
 }
+
+/* Conversion Events */
+.vsl-conversion-event {
+    background: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    overflow: hidden;
+}
+
+.vsl-conversion-event-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f0f0f0;
+    padding: 10px 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.vsl-conversion-event-header h4 {
+    margin: 0;
+}
+
+.vsl-conversion-event-content {
+    padding: 15px;
+}
+
+.vsl-event-field {
+    margin-bottom: 15px;
+}
+
+.vsl-event-integrations {
+    margin-top: 20px;
+    border-top: 1px solid #e0e0e0;
+    padding-top: 15px;
+}
+
+.vsl-event-integration-option {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.vsl-field-toggle-master {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Mensagem de recomendação */
+.vsl-conversion-note {
+    background: #f7fcff;
+    border-left: 4px solid #00a0d2;
+    padding: 10px 15px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.vsl-field-buttons {
+    margin-top: 15px;
+}
