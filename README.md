@@ -37,6 +37,9 @@ Para adquirir uma licença, visite: [https://mundowp.com.br/plugins/vsl-para-wor
 
 ## Histórico de Versões
 
+### Versão 1.2.0 – Adição de Recurso
+- Nova funcionalidade: Envio de eventos de conversão para Google Analytics, Google Ads e Facebook Pixel baseado em tempo de vídeo assistido.
+
 ### Versão 1.1.0 – Adição de Recurso
 - Nova funcionalidade: Revelar sessões após determinado tempo de vídeo assistido.
 
