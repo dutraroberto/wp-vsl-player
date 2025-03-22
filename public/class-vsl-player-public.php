@@ -120,6 +120,22 @@ class VSL_Player_Public {
             true
         );
         
+        // Registrar o CSS e JS do recurso de rastreamento de conversões
+        wp_register_style(
+            'vsl-player-conversions',
+            VSL_PLAYER_URL . 'public/css/vsl-player-conversions.css',
+            array(),
+            VSL_PLAYER_VERSION
+        );
+        
+        wp_register_script(
+            'vsl-player-conversions',
+            VSL_PLAYER_URL . 'public/js/vsl-player-conversions.js',
+            array('jquery', 'vsl-player-youtube'),
+            VSL_PLAYER_VERSION,
+            true
+        );
+        
         // Collect all VSL Player data for the page
         $players_data = $this->get_vsl_players_data();
         
@@ -225,6 +241,10 @@ class VSL_Player_Public {
         $offer_reveal_time = get_post_meta($post_id, '_vsl_offer_reveal_time', true) ?: '0';
         $offer_reveal_persist = get_post_meta($post_id, '_vsl_offer_reveal_persist', true) === '1';
         
+        // Eventos de conversão
+        $conversion_events = get_post_meta($post_id, '_vsl_conversion_events', true);
+        $has_conversion_events = !empty($conversion_events) && is_array($conversion_events);
+        
         // Extract YouTube video ID from URL
         $video_id = $this->get_youtube_video_id($youtube_url);
         if (!$video_id) {
@@ -263,6 +283,12 @@ class VSL_Player_Public {
             $output .= 'data-offer-reveal-class="' . esc_attr($offer_reveal_class) . '" ';
             $output .= 'data-offer-reveal-time="' . esc_attr($offer_reveal_time) . '" ';
             $output .= 'data-offer-reveal-persist="' . ($offer_reveal_persist ? 'true' : 'false') . '" ';
+        }
+        
+        // Atributos para eventos de conversão
+        $output .= 'data-has-conversion-events="' . ($has_conversion_events ? 'true' : 'false') . '" ';
+        if ($has_conversion_events) {
+            $output .= 'data-conversion-events="' . esc_attr(json_encode($conversion_events)) . '" ';
         }
         
         $output .= '>';
@@ -309,6 +335,12 @@ class VSL_Player_Public {
         if ($enable_offer_reveal) {
             wp_enqueue_style('vsl-player-offer-reveal');
             wp_enqueue_script('vsl-player-offer-reveal');
+        }
+        
+        // Se houver eventos de conversão, carregue os arquivos relacionados
+        if ($has_conversion_events) {
+            wp_enqueue_style('vsl-player-conversions');
+            wp_enqueue_script('vsl-player-conversions');
         }
         
         return $output;

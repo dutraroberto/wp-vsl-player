@@ -145,6 +145,44 @@ class VSL_Player_Admin {
         wp_enqueue_style('wp-color-picker');
         wp_enqueue_script('wp-color-picker');
         
+        // Conversions Admin CSS and JS (only for VSL Player editing)
+        if ($screen->id === 'vsl_player') {
+            wp_enqueue_style(
+                'vsl-player-conversions-admin',
+                VSL_PLAYER_URL . 'admin/css/vsl-player-conversions-admin.css',
+                array('vsl-player-admin-enhanced'),
+                VSL_PLAYER_VERSION,
+                'all'
+            );
+            
+            wp_enqueue_script(
+                'vsl-player-conversions-admin',
+                VSL_PLAYER_URL . 'admin/js/vsl-player-conversions-admin.js',
+                array('jquery', 'vsl-player-admin-enhanced'),
+                VSL_PLAYER_VERSION,
+                true
+            );
+            
+            // Localize script with translations for the conversions admin
+            wp_localize_script(
+                'vsl-player-conversions-admin',
+                'vslPlayerAdmin',
+                array(
+                    'i18n' => array(
+                        'conversionEvent' => __('Evento de Conversão', 'vsl-player'),
+                        'remove' => __('Remover', 'vsl-player'),
+                        'eventName' => __('Nome do Evento', 'vsl-player'),
+                        'eventNamePlaceholder' => __('Ex: View_Oferta', 'vsl-player'),
+                        'eventTime' => __('Tempo (segundos)', 'vsl-player'),
+                        'integrations' => __('Integrações', 'vsl-player'),
+                        'googleAnalytics' => __('Google Analytics (GA4)', 'vsl-player'),
+                        'googleAds' => __('Google Ads (Conversões)', 'vsl-player'),
+                        'facebookPixel' => __('Facebook Pixel', 'vsl-player')
+                    )
+                )
+            );
+        }
+        
         // Select2 para o CPT vsl_reveal
         wp_enqueue_style(
             'select2',
