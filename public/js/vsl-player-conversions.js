@@ -14,6 +14,9 @@
     
     // Initialize conversion tracking on all VSL players
     const initConversionTracking = function() {
+        // Verificar se as bibliotecas necessárias estão disponíveis
+        checkTrackingLibraries();
+        
         $('.vsl-player-container').each(function() {
             const $container = $(this);
             const vslId = $container.data('vsl-id');
@@ -92,6 +95,17 @@
         });
     };
     
+    // Verificar se as bibliotecas de rastreamento estão disponíveis
+    const checkTrackingLibraries = function() {
+        if (typeof gtag !== 'function') {
+            console.warn('[VSL Player] Google Analytics/Ads não detectado. Por favor, adicione o código de rastreamento do Google Analytics ou Google Ads no cabeçalho do site para habilitar o rastreamento de conversões.');
+        }
+        
+        if (typeof fbq !== 'function') {
+            console.warn('[VSL Player] Facebook Pixel não detectado. Por favor, adicione o código do Facebook Pixel no cabeçalho do site para habilitar o rastreamento de conversões para o Facebook.');
+        }
+    };
+    
     // Setup active polling for video time - similar à função do offerReveal
     const setupTimePolling = function($container, containerId, vslId, conversionEvents) {
         if (!containerId) {
@@ -158,27 +172,44 @@
     
     // Trigger the actual conversion event to analytics platforms
     const triggerConversionEvent = function(event) {
+        // Certifique-se de que os valores sejam strings para comparação
+        const gaEnabled = String(event.ga) === '1';
+        const gadsEnabled = String(event.gads) === '1';
+        const fbpixelEnabled = String(event.fbpixel) === '1';
+        
         // Google Analytics (GA4)
-        if (event.ga === '1' && typeof gtag === 'function') {
-            // Send event to GA4
-            gtag('event', event.name, {
-                'event_category': 'VSL Player',
-                'event_label': `Timestamp: ${event.time}s`
-            });
+        if (gaEnabled) {
+            if (typeof gtag === 'function') {
+                // Send event to GA4
+                gtag('event', event.name, {
+                    'event_category': 'VSL Player',
+                    'event_label': `Timestamp: ${event.time}s`
+                });
+            } else {
+                console.warn(`[VSL Player] Google Analytics está ativado para este evento, mas a função gtag não está disponível no site.`);
+            }
         }
         
         // Google Ads
-        if (event.gads === '1' && typeof gtag === 'function') {
-            // Send conversion to Google Ads
-            gtag('event', 'conversion', {
-                'send_to': 'AW-CONVERSION_ID/' + event.name
-            });
+        if (gadsEnabled) {
+            if (typeof gtag === 'function') {
+                // Send conversion to Google Ads
+                gtag('event', 'conversion', {
+                    'send_to': 'AW-CONVERSION_ID/' + event.name
+                });
+            } else {
+                console.warn(`[VSL Player] Google Ads está ativado para este evento, mas a função gtag não está disponível no site.`);
+            }
         }
         
         // Facebook Pixel
-        if (event.fbpixel === '1' && typeof fbq === 'function') {
-            // Send event to Facebook Pixel
-            fbq('track', event.name);
+        if (fbpixelEnabled) {
+            if (typeof fbq === 'function') {
+                // Send event to Facebook Pixel
+                fbq('track', event.name);
+            } else {
+                console.warn(`[VSL Player] Facebook Pixel está ativado para este evento, mas a função fbq não está disponível no site.`);
+            }
         }
         
         // Trigger a custom event for third-party integrations

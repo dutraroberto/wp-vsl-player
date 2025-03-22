@@ -288,6 +288,13 @@ class VSL_Player_Public {
         // Atributos para eventos de conversão
         $output .= 'data-has-conversion-events="' . ($has_conversion_events ? 'true' : 'false') . '" ';
         if ($has_conversion_events) {
+            // Certifique-se que os eventos tenham o formato correto antes de serializar
+            foreach ($conversion_events as $event_id => &$event_data) {
+                // Garanta que todos os campos necessários existam
+                if (!isset($event_data['id'])) {
+                    $event_data['id'] = $event_id;
+                }
+            }
             $output .= 'data-conversion-events="' . esc_attr(json_encode($conversion_events)) . '" ';
         }
         
