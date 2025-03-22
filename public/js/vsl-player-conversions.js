@@ -18,21 +18,51 @@
             const $container = $(this);
             const vslId = $container.data('vsl-id');
             const containerId = $container.attr('id');
-            const conversionEvents = $container.data('conversion-events');
             
-            if (!conversionEvents || !Array.isArray(conversionEvents) || !conversionEvents.length) {
+            // Verifique se há eventos de conversão
+            const hasConversionEvents = $container.data('has-conversion-events') === true;
+            if (!hasConversionEvents) {
                 return;
             }
             
-            // Add each event to the tracked events object with initial state
+            // Obtenha os eventos de conversão do atributo de dados
+            let conversionEvents;
+            try {
+                // Se os dados já estiverem desserializados como objeto
+                conversionEvents = $container.data('conversion-events');
+                
+                // Se for string, parse para objeto (pode acontecer devido à serialização)
+                if (typeof conversionEvents === 'string') {
+                    conversionEvents = JSON.parse(conversionEvents);
+                }
+                
+                // Converti para array se for objeto
+                if (conversionEvents && typeof conversionEvents === 'object' && !Array.isArray(conversionEvents)) {
+                    conversionEvents = Object.keys(conversionEvents).map(key => {
+                        return {
+                            id: key,
+                            ...conversionEvents[key]
+                        };
+                    });
+                }
+            } catch (e) {
+                return;
+            }
+            
+            if (!conversionEvents || !conversionEvents.length) {
+                return;
+            }
+            
+            // Inicialize cada evento no objeto de eventos rastreados
             conversionEvents.forEach(function(event) {
-                trackedEvents[`${vslId}_${event.id}`] = false;
+                const eventKey = `${vslId}_${event.id}`;
+                trackedEvents[eventKey] = false;
             });
             
-            // Setup active polling for video time
+            // Configure o monitoramento do tempo do vídeo
             setupTimePolling($container, containerId, vslId, conversionEvents);
             
-            // Also listen for messages from the YouTube iframe (for backwards compatibility)
+            // Listen for messages from the YouTube iframe (for backwards compatibility)
             window.addEventListener('message', function(event) {
                 let data;
                 
@@ -62,7 +92,7 @@
         });
     };
     
-    // Setup active polling for video time
+    // Setup active polling for video time - similar à função do offerReveal
     const setupTimePolling = function($container, containerId, vslId, conversionEvents) {
         if (!containerId) {
             return;
@@ -75,12 +105,13 @@
         
         // Poll every 500ms to check video time
         timePollingIntervals[containerId] = setInterval(function() {
-            // Check if all events are already tracked
+            // Verifique se todos os eventos já foram rastreados
             const allEventsTracked = conversionEvents.every(function(event) {
-                return trackedEvents[`${vslId}_${event.id}`];
+                const eventKey = `${vslId}_${event.id}`;
+                return trackedEvents[eventKey] === true;
             });
             
-            // If all events are tracked, clear the interval
+            // Se todos os eventos forem rastreados, limpe o intervalo
             if (allEventsTracked) {
                 clearInterval(timePollingIntervals[containerId]);
                 return;
@@ -92,10 +123,12 @@
                     const player = window.vslPlayers[containerId];
                     const currentTime = player.getCurrentTime();
                     
-                    // Check all conversion events
-                    checkConversionEvents(vslId, currentTime, conversionEvents);
+                    if (typeof currentTime === 'number') {
+                        // Check all conversion events
+                        checkConversionEvents(vslId, currentTime, conversionEvents);
+                    }
                 } catch (e) {
-                    console.error('[VSL Player] Error accessing player:', e);
+                    // Silenciando erro
                 }
             }
         }, 500);
@@ -107,16 +140,17 @@
             const eventKey = `${vslId}_${event.id}`;
             
             // Skip if already tracked
-            if (trackedEvents[eventKey]) {
+            if (trackedEvents[eventKey] === true) {
                 return;
             }
             
-            // Check if we should trigger the event
-            if (currentTime >= event.time) {
-                // Mark event as tracked
+            // Verifique se o evento deve ser disparado
+            const eventTime = parseInt(event.time, 10) || 0;
+            if (currentTime >= eventTime) {
+                // Marque o evento como rastreado
                 trackedEvents[eventKey] = true;
                 
-                // Trigger conversion event
+                // Dispare o evento de conversão
                 triggerConversionEvent(event);
             }
         });
@@ -124,10 +158,8 @@
     
     // Trigger the actual conversion event to analytics platforms
     const triggerConversionEvent = function(event) {
-        console.log(`[VSL Player] Conversion event triggered: ${event.name} at ${event.time} seconds`);
-        
         // Google Analytics (GA4)
-        if (event.ga && typeof gtag === 'function') {
+        if (event.ga === '1' && typeof gtag === 'function') {
             // Send event to GA4
             gtag('event', event.name, {
                 'event_category': 'VSL Player',
@@ -136,7 +168,7 @@
         }
         
         // Google Ads
-        if (event.gads && typeof gtag === 'function') {
+        if (event.gads === '1' && typeof gtag === 'function') {
             // Send conversion to Google Ads
             gtag('event', 'conversion', {
                 'send_to': 'AW-CONVERSION_ID/' + event.name
@@ -144,7 +176,7 @@
         }
         
         // Facebook Pixel
-        if (event.fbpixel && typeof fbq === 'function') {
+        if (event.fbpixel === '1' && typeof fbq === 'function') {
             // Send event to Facebook Pixel
             fbq('track', event.name);
         }
