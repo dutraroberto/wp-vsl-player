@@ -1,0 +1,97 @@
+/**
+ * VSL Player Smart Hooks styles
+ */
+
+/* Container for smart hooks */
+.vsl-smart-hooks-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 20;
+    pointer-events: none; /* Allow clicks to pass through to the video player */
+}
+
+/* Individual hook style */
+.vsl-smart-hook {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    z-index: 21;
+    opacity: 0; /* Start invisible, will be animated in with JS */
+}
+
+/* Admin styles for the smart hooks UI */
+.vsl-smart-hook {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border: 1px solid #e5e5e5;
+    border-radius: 5px;
+}
+
+.vsl-smart-hook-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.vsl-smart-hook-header h4 {
+    margin: 0;
+    padding: 0;
+}
+
+.vsl-smart-hook-content {
+    padding: 0 10px;
+}
+
+.vsl-hook-field {
+    margin-bottom: 15px;
+}
+
+.vsl-hook-field label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.vsl-hook-field-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.vsl-hook-field-group .vsl-hook-field {
+    flex: 1 1 calc(50% - 10px);
+    min-width: 150px;
+}
+
+.vsl-hook-image-preview {
+    margin-top: 10px;
+    padding: 10px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.vsl-hook-image-preview:empty {
+    display: none;
+}
+
+.vsl-hook-image-preview img {
+    max-width: 150px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+
+.vsl-hook-image-preview button {
+    display: block;
+    margin: 0 auto;
+}

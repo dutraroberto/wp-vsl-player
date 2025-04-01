@@ -163,10 +163,49 @@ class VSL_Player_Admin {
                 true
             );
             
+            // Smart Hooks Admin CSS
+            wp_enqueue_style(
+                'vsl-player-smart-hooks-admin',
+                VSL_PLAYER_URL . 'admin/css/vsl-player-smart-hooks-admin.css',
+                array('vsl-player-admin-enhanced'),
+                VSL_PLAYER_VERSION,
+                'all'
+            );
+            
+            // Smart Hooks Admin JS
+            wp_enqueue_script(
+                'vsl-player-smart-hooks-admin',
+                VSL_PLAYER_URL . 'admin/js/vsl-player-smart-hooks-admin.js',
+                array('jquery', 'vsl-player-admin-enhanced'),
+                VSL_PLAYER_VERSION,
+                true
+            );
+            
+            // Localize script with translations for the smart hooks admin
+            wp_localize_script(
+                'vsl-player-smart-hooks-admin',
+                'vslSmartHooksAdmin',
+                array(
+                    'i18n' => array(
+                        'smartHook' => __('Gancho Inteligente', 'vsl-player'),
+                        'remove' => __('Remover', 'vsl-player'),
+                        'hookName' => __('Nome do Gancho', 'vsl-player'),
+                        'hookNamePlaceholder' => __('Ex: 30s para oferta', 'vsl-player'),
+                        'hookImage' => __('Imagem do Gancho', 'vsl-player'),
+                        'selectImage' => __('Selecionar Imagem', 'vsl-player'),
+                        'imageDescription' => __('Imagem PNG 16:9 com o gatilho', 'vsl-player'),
+                        'startTime' => __('Tempo de início (segundos)', 'vsl-player'),
+                        'endTime' => __('Tempo de fim (segundos)', 'vsl-player'),
+                        'selectHookImage' => __('Selecione a imagem do gancho', 'vsl-player'),
+                        'useThisImage' => __('Usar esta imagem', 'vsl-player')
+                    )
+                )
+            );
+            
             // Localize script with translations for the conversions admin
             wp_localize_script(
                 'vsl-player-conversions-admin',
-                'vslPlayerAdmin',
+                'vslConversionsAdmin',
                 array(
                     'i18n' => array(
                         'conversionEvent' => __('Evento de Conversão', 'vsl-player'),

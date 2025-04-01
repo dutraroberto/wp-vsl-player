@@ -136,6 +136,22 @@ class VSL_Player_Public {
             true
         );
         
+        // Registrar o CSS e JS do recurso de Gancho Inteligente
+        wp_register_style(
+            'vsl-player-smart-hooks',
+            VSL_PLAYER_URL . 'public/css/vsl-player-smart-hooks.css',
+            array(),
+            VSL_PLAYER_VERSION
+        );
+        
+        wp_register_script(
+            'vsl-player-smart-hooks',
+            VSL_PLAYER_URL . 'public/js/vsl-player-smart-hooks.js',
+            array('jquery', 'vsl-player-youtube'),
+            VSL_PLAYER_VERSION,
+            true
+        );
+        
         // Collect all VSL Player data for the page
         $players_data = $this->get_vsl_players_data();
         

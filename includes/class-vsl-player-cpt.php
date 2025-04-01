@@ -557,6 +557,114 @@ class VSL_Player_CPT {
                 </div>
             </div>
             
+            <!-- SEÇÃO: GANCHO INTELIGENTE -->
+            <div class="vsl-settings-section">
+                <div class="vsl-section-header">
+                    <span class="dashicons dashicons-visibility"></span>
+                    <h2><?php echo esc_html__('Gancho Inteligente', 'vsl-player'); ?></h2>
+                </div>
+                <div class="vsl-section-content">
+                    <div class="vsl-field-row">
+                        <div class="vsl-field-label">
+                            <label><?php echo esc_html__('Ganchos Inteligentes', 'vsl-player'); ?></label>
+                            <p class="description"><?php echo esc_html__('Configure ganchos inteligentes para exibir imagens sobrepostas em pontos específicos do vídeo.', 'vsl-player'); ?></p>
+                        </div>
+                        <div class="vsl-field-input">
+                            <!-- Switcher mestre para ativar/desativar ganchos inteligentes -->
+                            <div class="vsl-field-toggle-master">
+                                <label class="vsl-toggle-switch">
+                                    <?php 
+                                    $smart_hooks_enabled = get_post_meta($post->ID, '_vsl_smart_hooks_enabled', true);
+                                    $smart_hooks_enabled = ($smart_hooks_enabled === '') ? '0' : $smart_hooks_enabled; // Desativado por padrão
+                                    ?>
+                                    <input type="checkbox" name="vsl_smart_hooks_enabled" id="vsl-smart-hooks-master-toggle" 
+                                           value="1" <?php checked($smart_hooks_enabled, '1'); ?>>
+                                    <span class="vsl-toggle-slider"></span>
+                                </label>
+                                <span class="vsl-toggle-label"><?php echo esc_html__('Ativar ganchos inteligentes', 'vsl-player'); ?></span>
+                            </div>
+                            
+                            <div id="vsl-smart-hooks-wrapper" class="<?php echo $smart_hooks_enabled === '1' ? '' : 'hidden'; ?>">
+                                <div id="vsl-smart-hooks-container">
+                                    <?php
+                                    // Recupera ganchos inteligentes existentes (será um array de arrays)
+                                    $smart_hooks = get_post_meta($post->ID, '_vsl_smart_hooks', true);
+                                    if (!is_array($smart_hooks)) {
+                                        $smart_hooks = array();
+                                    }
+                                    
+                                    // Exibe ganchos existentes
+                                    if (!empty($smart_hooks)) {
+                                        foreach ($smart_hooks as $hook_id => $hook_data) {
+                                            ?>
+                                            <div class="vsl-smart-hook" id="<?php echo esc_attr($hook_id); ?>">
+                                                <div class="vsl-smart-hook-header">
+                                                    <h4><?php echo esc_html__('Gancho Inteligente', 'vsl-player'); ?></h4>
+                                                    <button type="button" class="vsl-remove-hook button"><?php echo esc_html__('Remover', 'vsl-player'); ?></button>
+                                                </div>
+                                                <div class="vsl-smart-hook-content">
+                                                    <div class="vsl-hook-field">
+                                                        <label for="<?php echo esc_attr($hook_id); ?>-name"><?php echo esc_html__('Nome do Gancho', 'vsl-player'); ?></label>
+                                                        <input type="text" id="<?php echo esc_attr($hook_id); ?>-name" 
+                                                               name="vsl_smart_hooks[<?php echo esc_attr($hook_id); ?>][name]" 
+                                                               class="widefat" placeholder="<?php echo esc_attr__('Ex: 30s para oferta', 'vsl-player'); ?>" 
+                                                               value="<?php echo esc_attr($hook_data['name']); ?>" required>
+                                                    </div>
+                                                    <div class="vsl-hook-field">
+                                                        <label for="<?php echo esc_attr($hook_id); ?>-image"><?php echo esc_html__('Imagem do Gancho', 'vsl-player'); ?></label>
+                                                        <input type="hidden" id="<?php echo esc_attr($hook_id); ?>-image" 
+                                                               name="vsl_smart_hooks[<?php echo esc_attr($hook_id); ?>][image]" 
+                                                               value="<?php echo esc_attr($hook_data['image']); ?>">
+                                                        <button type="button" class="button vsl-upload-hook-image" 
+                                                                data-target="<?php echo esc_attr($hook_id); ?>-image"
+                                                                data-preview="<?php echo esc_attr($hook_id); ?>-image-preview">
+                                                            <?php echo esc_html__('Selecionar Imagem', 'vsl-player'); ?>
+                                                        </button>
+                                                        <p class="description"><?php echo esc_html__('Imagem PNG 16:9 com o gatilho', 'vsl-player'); ?></p>
+                                                        <div class="vsl-hook-image-preview" id="<?php echo esc_attr($hook_id); ?>-image-preview">
+                                                            <?php 
+                                                            if (!empty($hook_data['image'])) {
+                                                                echo wp_get_attachment_image($hook_data['image'], 'thumbnail');
+                                                                echo '<button type="button" class="button vsl-remove-hook-image" data-target="' . esc_attr($hook_id) . '-image" data-preview="' . esc_attr($hook_id) . '-image-preview">' . esc_html__('Remover', 'vsl-player') . '</button>';
+                                                            }
+                                                            ?>
+                                                        </div>
+                                                        <div class="vsl-hook-field-group">
+                                                            <div class="vsl-hook-field">
+                                                                <label for="<?php echo esc_attr($hook_id); ?>-start"><?php echo esc_html__('Tempo de início (segundos)', 'vsl-player'); ?></label>
+                                                                <input type="number" id="<?php echo esc_attr($hook_id); ?>-start" 
+                                                                       name="vsl_smart_hooks[<?php echo esc_attr($hook_id); ?>][start]" 
+                                                                       class="small-text" min="0" step="1" 
+                                                                       value="<?php echo absint($hook_data['start']); ?>" required>
+                                                            </div>
+                                                            <div class="vsl-hook-field">
+                                                                <label for="<?php echo esc_attr($hook_id); ?>-end"><?php echo esc_html__('Tempo de fim (segundos)', 'vsl-player'); ?></label>
+                                                                <input type="number" id="<?php echo esc_attr($hook_id); ?>-end" 
+                                                                       name="vsl_smart_hooks[<?php echo esc_attr($hook_id); ?>][end]" 
+                                                                       class="small-text" min="0" step="1" 
+                                                                       value="<?php echo absint($hook_data['end']); ?>" required>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <?php
+                                        }
+                                    }
+                                    ?>
+                                </div>
+                                
+                                <div class="vsl-field-buttons">
+                                    <button type="button" id="vsl-add-smart-hook" class="button button-secondary">
+                                        <span class="dashicons dashicons-plus-alt"></span> <?php echo esc_html__('Adicionar Novo Gancho', 'vsl-player'); ?>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- SEÇÃO: SHORTCODE -->
             <div class="vsl-settings-section">
                 <div class="vsl-section-header">
@@ -773,6 +881,23 @@ class VSL_Player_CPT {
             // Salvar opção de ativar rastreamento de conversões
             $conversions_enabled = isset($_POST['vsl_conversions_enabled']) ? '1' : '0';
             update_post_meta($post_id, '_vsl_conversions_enabled', $conversions_enabled);
+            
+            // Salvar opções de ganchos inteligentes
+            $smart_hooks_enabled = isset($_POST['vsl_smart_hooks_enabled']) ? '1' : '0';
+            update_post_meta($post_id, '_vsl_smart_hooks_enabled', $smart_hooks_enabled);
+            
+            if (isset($_POST['vsl_smart_hooks'])) {
+                $smart_hooks = array();
+                foreach ($_POST['vsl_smart_hooks'] as $hook_id => $hook_data) {
+                    $smart_hooks[$hook_id] = array(
+                        'name' => sanitize_text_field($hook_data['name']),
+                        'image' => sanitize_text_field($hook_data['image']),
+                        'start' => absint($hook_data['start']),
+                        'end' => absint($hook_data['end']),
+                    );
+                }
+                update_post_meta($post_id, '_vsl_smart_hooks', $smart_hooks);
+            }
             
             // Generate and save a thumbnail from YouTube if URL is set
             if (!empty($_POST['vsl_youtube_url'])) {
@@ -1096,8 +1221,34 @@ class VSL_Player_CPT {
         // Generate player ID
         $player_id = 'vsl-player-' . $post_id;
         
+        // Recuperar configurações de ganchos inteligentes
+        $smart_hooks_enabled = get_post_meta($post_id, '_vsl_smart_hooks_enabled', true);
+        $smart_hooks = get_post_meta($post_id, '_vsl_smart_hooks', true);
+        $smart_hooks_enabled = ($smart_hooks_enabled === '1' || $smart_hooks_enabled === true);
+        
+        // Prepare smart hooks data for JS
+        $smart_hooks_data = array();
+        if ($smart_hooks_enabled && is_array($smart_hooks) && !empty($smart_hooks)) {
+            foreach ($smart_hooks as $hook_id => $hook_data) {
+                if (!empty($hook_data['image'])) {
+                    $image_url = wp_get_attachment_image_url($hook_data['image'], 'full');
+                    if ($image_url) {
+                        $smart_hooks_data[] = array(
+                            'name' => $hook_data['name'],
+                            'image' => $image_url,
+                            'start' => absint($hook_data['start']),
+                            'end' => absint($hook_data['end'])
+                        );
+                    }
+                }
+            }
+        }
+        
+        // Convert smart hooks data to JSON for data attribute
+        $smart_hooks_json = !empty($smart_hooks_data) ? json_encode($smart_hooks_data) : '[]';
+        
         // Build the player container
-        $output = '<div id="' . esc_attr($player_id) . '" class="vsl-player-container" data-vsl-id="' . esc_attr($post_id) . '" data-video-id="' . esc_attr($video_id) . '" data-player-color="' . esc_attr($player_color) . '" data-fake-progress="' . ($fake_progress ? 'true' : 'false') . '" data-progress-color="' . esc_attr($progress_color) . '" data-pause-style="' . esc_attr($pause_style) . '" data-pause-color="' . esc_attr($pause_color) . '" data-pause-image="' . esc_attr($pause_image_id) . '" data-hide-pause-button="' . ($hide_pause_button ? 'true' : 'false') . '" data-enable-resume-player="' . ($enable_resume_player ? 'true' : 'false') . '" data-resume-overlay-color="' . esc_attr($resume_overlay_color) . '" data-resume-button-color="' . esc_attr($resume_button_color) . '" data-resume-button-hover-color="' . esc_attr($resume_button_hover_color) . '">';
+        $output = '<div id="' . esc_attr($player_id) . '" class="vsl-player-container" data-vsl-id="' . esc_attr($post_id) . '" data-video-id="' . esc_attr($video_id) . '" data-player-color="' . esc_attr($player_color) . '" data-fake-progress="' . ($fake_progress ? 'true' : 'false') . '" data-progress-color="' . esc_attr($progress_color) . '" data-pause-style="' . esc_attr($pause_style) . '" data-pause-color="' . esc_attr($pause_color) . '" data-pause-image="' . esc_attr($pause_image_id) . '" data-hide-pause-button="' . ($hide_pause_button ? 'true' : 'false') . '" data-enable-resume-player="' . ($enable_resume_player ? 'true' : 'false') . '" data-resume-overlay-color="' . esc_attr($resume_overlay_color) . '" data-resume-button-color="' . esc_attr($resume_button_color) . '" data-resume-button-hover-color="' . esc_attr($resume_button_hover_color) . '" data-smart-hooks-enabled="' . ($smart_hooks_enabled ? 'true' : 'false') . '" data-smart-hooks=\'' . esc_attr($smart_hooks_json) . '\'>';
         
         // Get custom SVG with player color
         $player_svg = $this->get_player_svg($post_id);

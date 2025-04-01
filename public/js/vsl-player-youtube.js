@@ -531,6 +531,34 @@
         
         // Armazenar o player em uma variável global para facilitar o acesso
         window['vslYouTubePlayer_' + vslId] = player;
+        
+        // Inicializar o recurso de Gancho Inteligente, se disponível
+        if (window.VSLPlayer && window.VSLPlayer.SmartHooks && typeof window.VSLPlayer.SmartHooks.init === 'function') {
+            // Verificar se os ganchos inteligentes estão habilitados para este player
+            var smartHooksEnabled = $container.data('smart-hooks-enabled');
+            if (smartHooksEnabled === true || smartHooksEnabled === 'true') {
+                // Carregar script e estilos, se ainda não estiverem carregados
+                if (!$('script[src*="vsl-player-smart-hooks.js"]').length) {
+                    $.getScript(vslPlayerData.plugin_url + 'public/js/vsl-player-smart-hooks.js', function() {
+                        // Inicializar após o carregamento do script
+                        window.VSLPlayer.SmartHooks.init(player, containerId);
+                    });
+                } else {
+                    // Script já carregado, inicializar diretamente
+                    window.VSLPlayer.SmartHooks.init(player, containerId);
+                }
+                
+                if (!$('link[href*="vsl-player-smart-hooks.css"]').length) {
+                    $('<link>').attr({
+                        rel: 'stylesheet',
+                        type: 'text/css',
+                        href: vslPlayerData.plugin_url + 'public/css/vsl-player-smart-hooks.css'
+                    }).appendTo('head');
+                }
+                
+                console.log('[VSL Player] Smart Hooks initialized for player', containerId);
+            }
+        }
     }
     
     /**

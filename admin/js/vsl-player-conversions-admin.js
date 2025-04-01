@@ -22,44 +22,44 @@
             const template = `
                 <div class="vsl-conversion-event" id="${eventId}">
                     <div class="vsl-conversion-event-header">
-                        <h4>${vslPlayerAdmin.i18n.conversionEvent}</h4>
-                        <button type="button" class="vsl-remove-event button">${vslPlayerAdmin.i18n.remove}</button>
+                        <h4>${vslConversionsAdmin.i18n.conversionEvent}</h4>
+                        <button type="button" class="vsl-remove-event button">${vslConversionsAdmin.i18n.remove}</button>
                     </div>
                     <div class="vsl-conversion-event-content">
                         <div class="vsl-event-field">
-                            <label for="${eventId}-name">${vslPlayerAdmin.i18n.eventName}</label>
+                            <label for="${eventId}-name">${vslConversionsAdmin.i18n.eventName}</label>
                             <input type="text" id="${eventId}-name" 
                                    name="vsl_conversion_events[${eventId}][name]" 
-                                   class="widefat" placeholder="${vslPlayerAdmin.i18n.eventNamePlaceholder}" required>
+                                   class="widefat" placeholder="${vslConversionsAdmin.i18n.eventNamePlaceholder}" required>
                         </div>
                         <div class="vsl-event-field">
-                            <label for="${eventId}-time">${vslPlayerAdmin.i18n.eventTime}</label>
+                            <label for="${eventId}-time">${vslConversionsAdmin.i18n.eventTime}</label>
                             <input type="number" id="${eventId}-time" 
                                    name="vsl_conversion_events[${eventId}][time]" 
                                    class="small-text" min="0" step="1" value="0" required>
                         </div>
                         <div class="vsl-event-integrations">
-                            <h5>${vslPlayerAdmin.i18n.integrations}</h5>
+                            <h5>${vslConversionsAdmin.i18n.integrations}</h5>
                             <div class="vsl-event-integration-option">
                                 <label class="vsl-toggle-switch">
                                     <input type="checkbox" name="vsl_conversion_events[${eventId}][ga]" value="1">
                                     <span class="vsl-toggle-slider"></span>
                                 </label>
-                                <span class="vsl-toggle-label">${vslPlayerAdmin.i18n.googleAnalytics}</span>
+                                <span class="vsl-toggle-label">${vslConversionsAdmin.i18n.googleAnalytics}</span>
                             </div>
                             <div class="vsl-event-integration-option">
                                 <label class="vsl-toggle-switch">
                                     <input type="checkbox" name="vsl_conversion_events[${eventId}][gads]" value="1">
                                     <span class="vsl-toggle-slider"></span>
                                 </label>
-                                <span class="vsl-toggle-label">${vslPlayerAdmin.i18n.googleAds}</span>
+                                <span class="vsl-toggle-label">${vslConversionsAdmin.i18n.googleAds}</span>
                             </div>
                             <div class="vsl-event-integration-option">
                                 <label class="vsl-toggle-switch">
                                     <input type="checkbox" name="vsl_conversion_events[${eventId}][fbpixel]" value="1">
                                     <span class="vsl-toggle-slider"></span>
                                 </label>
-                                <span class="vsl-toggle-label">${vslPlayerAdmin.i18n.facebookPixel}</span>
+                                <span class="vsl-toggle-label">${vslConversionsAdmin.i18n.facebookPixel}</span>
                             </div>
                         </div>
                     </div>
