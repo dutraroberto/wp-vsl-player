@@ -162,25 +162,36 @@
             console.log(`[VSL Smart Hooks] Criando elemento para o hook "${hook.name}"`);
             console.log(`[VSL Smart Hooks] URL da imagem: ${hook.image}`);
             
-            // Criar elemento para o hook
+            // Criar elemento para o hook com fundo transparente
             const $hook = $('<div>', {
                 id: hookId,
                 class: 'vsl-smart-hook',
                 css: {
-                    'opacity': 0
+                    'opacity': 0,
+                    'background': 'transparent'
                 }
             });
             
-            // Adicionar a imagem como elemento filho para melhor controle
+            // Adicionar a imagem como elemento filho
             const $img = $('<img>', {
                 src: hook.image,
                 alt: hook.name || 'Smart Hook',
-                class: 'vsl-smart-hook-image'
+                class: 'vsl-smart-hook-image',
+                css: {
+                    'background': 'transparent'
+                }
             });
             
             // Log de depuração quando a imagem carregar ou falhar
             $img.on('load', function() {
                 console.log(`[VSL Smart Hooks] Imagem carregada com sucesso para hook "${hook.name}"`);
+                // Verificar se a imagem tem canal alfa (transparência)
+                try {
+                    const img = this;
+                    console.log(`[VSL Smart Hooks] Dimensões da imagem: ${img.naturalWidth}x${img.naturalHeight}`);
+                } catch (e) {
+                    console.error('[VSL Smart Hooks] Erro ao verificar imagem:', e);
+                }
             });
             
             $img.on('error', function() {

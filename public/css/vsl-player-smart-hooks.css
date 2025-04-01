@@ -11,6 +11,7 @@
     height: 100%;
     z-index: 100; /* Acima do player, mas abaixo dos controles */
     pointer-events: none; /* Allow clicks to pass through to the video player */
+    background: transparent !important; /* Garante que não haja fundo */
 }
 
 /* Individual hook style */
@@ -26,6 +27,7 @@
     opacity: 0; /* Start invisible, will be animated in with JS */
     transition: opacity 0.4s ease;
     pointer-events: none; /* Allow clicks to pass through to the video player */
+    background: transparent !important; /* Garante que não haja fundo */
 }
 
 /* Admin styles for the smart hooks UI */
@@ -103,6 +105,8 @@
     left: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover; /* Cobre toda a área, mas mantém a proporção */
+    object-fit: contain; /* 'contain' preserva melhor a transparência que 'cover' */
+    background: transparent !important; /* Garante que não haja fundo */
     pointer-events: none; /* Garante que não intercepte cliques */
+    mix-blend-mode: normal; /* Ajuda a preservar a transparência */
 }
