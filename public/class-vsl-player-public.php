@@ -408,9 +408,6 @@ class VSL_Player_Public {
         if ($has_smart_hooks) {
             wp_enqueue_style('vsl-player-smart-hooks');
             wp_enqueue_script('vsl-player-smart-hooks');
-            
-            // Adicione uma classe especial ao container para lidar com a transparência
-            $output = str_replace('class="vsl-player-container"', 'class="vsl-player-container has-smart-hooks"', $output);
         }
         
         return $output;
