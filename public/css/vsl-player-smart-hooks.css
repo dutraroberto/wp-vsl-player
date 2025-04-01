@@ -9,7 +9,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 20;
+    z-index: 100; /* Acima do player, mas abaixo dos controles */
     pointer-events: none; /* Allow clicks to pass through to the video player */
 }
 
@@ -20,11 +20,16 @@
     left: 0;
     width: 100%;
     height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
     z-index: 21;
     opacity: 0; /* Start invisible, will be animated in with JS */
+    transition: opacity 0.4s ease;
+    pointer-events: none; /* Allow clicks to pass through to the video player */
 }
 
 /* Admin styles for the smart hooks UI */
@@ -94,4 +99,12 @@
 .vsl-hook-image-preview button {
     display: block;
     margin: 0 auto;
+}
+
+.vsl-smart-hook-image {
+    max-width: 90%;
+    max-height: 85%;
+    height: auto;
+    object-fit: contain;
+    pointer-events: none; /* Garante que não intercepte cliques */
 }

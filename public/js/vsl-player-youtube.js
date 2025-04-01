@@ -536,27 +536,20 @@
         if (window.VSLPlayer && window.VSLPlayer.SmartHooks && typeof window.VSLPlayer.SmartHooks.init === 'function') {
             // Verificar se os ganchos inteligentes estão habilitados para este player
             var smartHooksEnabled = $container.data('smart-hooks-enabled');
+            console.log('[VSL Player] Smart Hooks habilitado para player ' + containerId + '?', smartHooksEnabled);
+            
             if (smartHooksEnabled === true || smartHooksEnabled === 'true') {
-                // Carregar script e estilos, se ainda não estiverem carregados
-                if (!$('script[src*="vsl-player-smart-hooks.js"]').length) {
-                    $.getScript(vslPlayerData.plugin_url + 'public/js/vsl-player-smart-hooks.js', function() {
-                        // Inicializar após o carregamento do script
-                        window.VSLPlayer.SmartHooks.init(player, containerId);
-                    });
-                } else {
-                    // Script já carregado, inicializar diretamente
+                // Verificar se há dados de hooks
+                var smartHooksData = $container.data('smart-hooks');
+                console.log('[VSL Player] Dados dos Smart Hooks:', smartHooksData);
+                
+                // Inicializar imediatamente, os scripts já foram carregados pela classe-public.php
+                try {
                     window.VSLPlayer.SmartHooks.init(player, containerId);
+                    console.log('[VSL Player] Smart Hooks inicializado para player', containerId);
+                } catch (e) {
+                    console.error('[VSL Player] Erro ao inicializar Smart Hooks:', e);
                 }
-                
-                if (!$('link[href*="vsl-player-smart-hooks.css"]').length) {
-                    $('<link>').attr({
-                        rel: 'stylesheet',
-                        type: 'text/css',
-                        href: vslPlayerData.plugin_url + 'public/css/vsl-player-smart-hooks.css'
-                    }).appendTo('head');
-                }
-                
-                console.log('[VSL Player] Smart Hooks initialized for player', containerId);
             }
         }
     }

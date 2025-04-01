@@ -263,6 +263,12 @@ class VSL_Player_Public {
         $conversion_events = get_post_meta($post_id, '_vsl_conversion_events', true);
         $has_conversion_events = $conversions_enabled === '1' && is_array($conversion_events) && !empty($conversion_events);
         
+        // Atributos para Smart Hooks
+        $smart_hooks_enabled = get_post_meta($post_id, '_vsl_smart_hooks_enabled', true);
+        $smart_hooks_enabled = ($smart_hooks_enabled === '') ? '0' : $smart_hooks_enabled; // Desativado por padrão
+        $smart_hooks = get_post_meta($post_id, '_vsl_smart_hooks', true);
+        $has_smart_hooks = $smart_hooks_enabled === '1' && is_array($smart_hooks) && !empty($smart_hooks);
+        
         // Extract YouTube video ID from URL
         $video_id = $this->get_youtube_video_id($youtube_url);
         if (!$video_id) {
@@ -316,6 +322,36 @@ class VSL_Player_Public {
             $output .= 'data-conversion-events="' . esc_attr(json_encode($conversion_events)) . '" ';
         }
         
+        // Atributos para Smart Hooks
+        $output .= 'data-smart-hooks-enabled="' . ($has_smart_hooks ? 'true' : 'false') . '" ';
+        if ($has_smart_hooks) {
+            $processed_hooks = array();
+            
+            foreach ($smart_hooks as $hook_id => $hook_data) {
+                // Processar os dados do hook
+                $image_id = isset($hook_data['image']) ? absint($hook_data['image']) : 0;
+                $image_url = $image_id ? wp_get_attachment_url($image_id) : '';
+                
+                // Adicionar apenas se tiver uma imagem válida
+                if ($image_url) {
+                    $processed_hooks[] = array(
+                        'id' => $hook_id,
+                        'name' => isset($hook_data['name']) ? sanitize_text_field($hook_data['name']) : '',
+                        'image' => $image_url,
+                        'start' => isset($hook_data['start']) ? absint($hook_data['start']) : 0,
+                        'end' => isset($hook_data['end']) ? absint($hook_data['end']) : 0
+                    );
+                }
+            }
+            
+            // Adicionar dados como atributo apenas se houver hooks processados
+            if (!empty($processed_hooks)) {
+                $output .= 'data-smart-hooks="' . esc_attr(json_encode($processed_hooks)) . '" ';
+            } else {
+                $output .= 'data-smart-hooks-enabled="false" ';
+            }
+        }
+        
         $output .= '>';
         
         // Create the various overlays for the player
@@ -366,6 +402,12 @@ class VSL_Player_Public {
         if ($has_conversion_events) {
             wp_enqueue_style('vsl-player-conversions');
             wp_enqueue_script('vsl-player-conversions');
+        }
+        
+        // Se houver Smart Hooks, carregue os arquivos relacionados
+        if ($has_smart_hooks) {
+            wp_enqueue_style('vsl-player-smart-hooks');
+            wp_enqueue_script('vsl-player-smart-hooks');
         }
         
         return $output;
