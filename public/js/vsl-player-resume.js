@@ -200,6 +200,9 @@
             // Ocultar o overlay de início e mostrar o overlay de reprodução
             $container.find('.vsl-start-overlay').hide();
             $container.find('.vsl-playing-overlay').show();
+            
+            // Ocultar o SVG de overlay
+            $container.find('.vsl-play-button-svg').hide();
         } else {
             // Verificar se há um evento personalizado para inicializar o player
             // que será capturado pelo vsl-player-youtube.js
@@ -233,6 +236,9 @@
                     // Ocultar o overlay de início e mostrar o overlay de reprodução
                     $container.find('.vsl-start-overlay').hide();
                     $container.find('.vsl-playing-overlay').show();
+                    
+                    // Ocultar o SVG de overlay
+                    $container.find('.vsl-play-button-svg').hide();
                 }, 500);
             }
         }, 100);
