@@ -37,6 +37,9 @@ Para adquirir uma licença, visite: [https://mundowp.com.br/plugins/vsl-para-wor
 
 ## Histórico de Versões
 
+### Versão 1.3.1 – Correção
+- Correção: O overlay de resumo não se escondia corretamente.
+
 ### Versão 1.3.0 – Adição de Recurso
 - Nova funcionalidade: Adição de ganchos inteligentes.
 
