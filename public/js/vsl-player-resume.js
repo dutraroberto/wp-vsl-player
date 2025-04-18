@@ -156,8 +156,11 @@
             // Inicializar o player do YouTube se ainda não estiver inicializado
             initializeVideoPlayer($container, containerId, vslId, savedTime);
             
-            // Ocultar o overlay
+            // Ocultar o overlay de resumo
             $resumeOverlay.hide();
+            
+            // Ocultar também o overlay inicial e SVG
+            hideInitialOverlay($container);
         });
         
         // Configurar evento para o botão de reiniciar
@@ -175,9 +178,28 @@
             // Inicializar o player do YouTube se ainda não estiver inicializado
             initializeVideoPlayer($container, containerId, vslId, 0);
             
-            // Ocultar o overlay
+            // Ocultar o overlay de resumo
             $resumeOverlay.hide();
+            
+            // Ocultar também o overlay inicial e SVG
+            hideInitialOverlay($container);
         });
+    }
+    
+    /**
+     * Helper para esconder overlay inicial e SVG
+     */
+    function hideInitialOverlay($container) {
+        var $startOverlay = $container.find('.vsl-start-overlay');
+        $startOverlay.css({
+            'opacity': '0',
+            'visibility': 'hidden',
+            'display': 'none',
+            'pointer-events': 'none',
+            'z-index': '-1'
+        });
+        $container.find('.vsl-play-button-svg').hide();
+        $container.find('.vsl-playing-overlay').show();
     }
     
     /**
