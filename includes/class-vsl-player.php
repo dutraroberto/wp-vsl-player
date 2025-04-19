@@ -27,6 +27,10 @@ class VSL_Player {
         
         // Public-facing functionality
         require_once VSL_PLAYER_DIR . 'public/class-vsl-player-public.php';
+        
+        // Elementor integration
+        require_once VSL_PLAYER_DIR . 'includes/elementor/class-vsl-player-elementor.php';
+        require_once VSL_PLAYER_DIR . 'includes/elementor/class-vsl-player-elementor-preview.php';
     }
 
     /**
