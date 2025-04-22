@@ -31,6 +31,11 @@ class VSL_Player {
         // Elementor integration
         require_once VSL_PLAYER_DIR . 'includes/elementor/class-vsl-player-elementor.php';
         require_once VSL_PLAYER_DIR . 'includes/elementor/class-vsl-player-elementor-preview.php';
+        
+        // Analytics system
+        require_once VSL_PLAYER_DIR . 'includes/class-vsl-analytics-installer.php';
+        require_once VSL_PLAYER_DIR . 'includes/class-vsl-analytics-rest.php';
+        require_once VSL_PLAYER_DIR . 'includes/class-vsl-analytics.php';
     }
 
     /**
@@ -48,6 +53,10 @@ class VSL_Player {
         
         // Initialize public-facing functionality
         $public = new VSL_Player_Public();
+        
+        // Initialize analytics
+        $analytics = new VSL_Analytics();
+        $analytics->init();
         
         // Register activation and deactivation hooks
         register_activation_hook(VSL_PLAYER_DIR . 'vsl-player.php', array($this, 'activate'));
@@ -80,6 +89,9 @@ class VSL_Player {
      * Plugin activation
      */
     public function activate() {
+        // Create analytics tables
+        VSL_Analytics_Installer::install();
+        
         // Actions to perform on activation
         flush_rewrite_rules();
     }

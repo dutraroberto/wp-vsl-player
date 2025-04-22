@@ -208,6 +208,7 @@ class VSL_Player_Public {
                 array(),
                 VSL_PLAYER_VERSION
             );
+    
         }
     }
     
@@ -219,6 +220,17 @@ class VSL_Player_Public {
      * @return string
      */
     public function vsl_player_shortcode($atts, $content = null) {
+        // Log para depuração
+        error_log('[VSL Player] Shortcode sendo processado');
+        
+        // Acesso à instância global do analytics
+        global $vsl_analytics;
+        if (!isset($vsl_analytics)) {
+            error_log('[VSL Player] AVISO: $vsl_analytics não está disponível globalmente');
+        } else {
+            error_log('[VSL Player] $vsl_analytics encontrado');
+        }
+        
         // Extract attributes
         $atts = shortcode_atts(array(
             'id' => 0,
@@ -228,6 +240,7 @@ class VSL_Player_Public {
         $post_id = absint($atts['id']);
         
         if (!$post_id || get_post_type($post_id) !== 'vsl_player') {
+            error_log('[VSL Player] ERRO: ID de player inválido ou tipo de post incorreto');
             return '';
         }
         
@@ -272,6 +285,7 @@ class VSL_Player_Public {
         // Extract YouTube video ID from URL
         $video_id = $this->get_youtube_video_id($youtube_url);
         if (!$video_id) {
+            error_log('[VSL Player] ERRO: ID de vídeo do YouTube não encontrado na URL: ' . $youtube_url);
             return '';
         }
         
@@ -386,16 +400,12 @@ class VSL_Player_Public {
             wp_enqueue_script('vsl-player-progress-bar');
         }
         
-        // Se o resume player estiver ativado, carregue os arquivos relacionados
-        if ($enable_resume_player) {
-            wp_enqueue_style('vsl-player-resume');
-            wp_enqueue_script('vsl-player-resume');
-        }
-        
-        // Se o offer reveal estiver ativado, carregue os arquivos relacionados
-        if ($enable_offer_reveal) {
-            wp_enqueue_style('vsl-player-offer-reveal');
-            wp_enqueue_script('vsl-player-offer-reveal');
+        // Ativar o sistema de analytics para este player
+        if (isset($vsl_analytics)) {
+            error_log('[VSL Player] Ativando analytics para o player ' . $post_id . ' com ID do YouTube ' . $video_id);
+            $vsl_analytics->enqueue_analytics($post_id, $video_id);
+        } else {
+            error_log('[VSL Player] ERRO: $vsl_analytics não disponível, não é possível ativar analytics');
         }
         
         // Se houver eventos de conversão, carregue os arquivos relacionados

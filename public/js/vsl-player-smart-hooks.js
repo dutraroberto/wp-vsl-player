@@ -9,7 +9,7 @@
     // Store hooks by player ID
     var playerHooks = {};
     var activeHooks = {};
-    var checkInterval = 250; // Check every 250ms
+    var checkInterval = 1000; // Check every 1000ms
 
     /**
      * Initialize Smart Hooks for a player
