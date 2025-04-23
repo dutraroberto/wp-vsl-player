@@ -39,6 +39,7 @@ Para adquirir uma licença, visite: [https://mundowp.com.br/plugins/vsl-para-wor
 
 ### Versão 1.3.1 – Correção
 - Correção: O overlay de resumo não se escondia corretamente.
+- Correção: A altura do player não se ajustava corretamente em dispositivos móveis.
 
 ### Versão 1.3.0 – Adição de Recurso
 - Nova funcionalidade: Adição de ganchos inteligentes.
