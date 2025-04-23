@@ -1,0 +1,153 @@
+/**
+ * VSL Player Analytics
+ * 
+ * Captura eventos de reprodução e envia para o endpoint REST API
+ */
+
+(function($) {
+    'use strict';
+    
+    // Controle para evitar eventos duplicados
+    let sent = {
+        impression: false,
+        play: false
+    };
+    
+    // Ping de progresso
+    let progressInterval = null;
+
+    // Cria um UUID para identificar a sessão do usuário
+    function generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0,
+                v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
+    // Simplifica o UUID para um formato de hash de sessão
+    function simplifyToMD5(uuid) {
+        return uuid.replace(/-/g, '').substring(0, 32);
+    }
+
+    // Configuração inicial
+    $(document).ready(function() {
+        // Verifica se o endpoint está disponível
+        if (!window.vslPlayerAnalytics || !window.vslPlayerAnalytics.endpoint) {
+            console.warn('VSL Player Analytics: Configuração não disponível');
+            return;
+        }
+
+        // Obtém ou cria o hash da sessão
+        const sessionHashKey = 'vsl_sha';
+        let sessionHash = localStorage.getItem(sessionHashKey);
+        if (!sessionHash) {
+            const uuid = generateUUID();
+            sessionHash = simplifyToMD5(uuid);
+            localStorage.setItem(sessionHashKey, sessionHash);
+        }
+
+        // Função para enviar eventos
+        function sendEvent(type, extra = {}) {
+            if (!window.vslPlayerAnalytics) return;
+
+            const data = Object.assign({
+                type: type,
+                session_hash: sessionHash,
+                video_post_id: window.vslPlayerAnalytics.postId || 0,
+                page_url: window.location.href,
+                current_time_s: 0,
+                video_duration_s: 0
+            }, extra);
+
+            console.log(`VSL Analytics: Enviando evento ${type}`);
+            
+            fetch(window.vslPlayerAnalytics.endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': window.vslPlayerAnalytics.nonce
+                },
+                body: JSON.stringify(data)
+            })
+            .catch(function(error) {
+                console.error('Erro ao enviar evento VSL:', error);
+            });
+        }
+
+        // Função para iniciar o ping de progresso
+        function startProgressPing(player) {
+            if (progressInterval) {
+                clearInterval(progressInterval);
+            }
+            
+            const pingEvery = 10000; // 10 segundos
+            
+            progressInterval = setInterval(function() {
+                // Só envia se o player existir, o vídeo estiver reproduzindo e o play já tiver sido enviado
+                if (player && player.getPlayerState && player.getPlayerState() === 1 && sent.play) {
+                    sendEvent('progress', {
+                        current_time_s: Math.floor(player.getCurrentTime()),
+                        video_duration_s: Math.floor(player.getDuration())
+                    });
+                }
+            }, pingEvery);
+        }
+
+        // Enviar evento de impressão imediatamente (apenas uma vez)
+        if (!sent.impression) {
+            sendEvent('impression');
+            sent.impression = true;
+        }
+
+        // Quando o player estiver pronto
+        $(document).on('YT.PlayerReady', function(event, player, scriptId) {
+            if (!player) return;
+
+            var containerId = player.getIframe().id.replace('-inner', '');
+            var $container = $('#' + containerId);
+            
+            // Verificar se existe o overlay de início
+            var $startOverlay = $container.find('.vsl-start-overlay');
+            
+            if ($startOverlay.length) {
+                // Remover evento original para não duplicar
+                $startOverlay.off('click.analytics');
+                
+                // Adicionar novo listener de clique para evento de play
+                $startOverlay.on('click.analytics', function() {
+                    if (!sent.play) {
+                        sendEvent('play', {
+                            current_time_s: Math.floor(player.getCurrentTime() || 0),
+                            video_duration_s: Math.floor(player.getDuration() || 0)
+                        });
+                        sent.play = true;
+                        
+                        // Só iniciar o ping de progresso após o clique no play
+                        startProgressPing(player);
+                    }
+                });
+            }
+            
+            // Detectar fim do vídeo
+            $(document).on('YT.PlayerState.ENDED', function(e, thisPlayer, thisScriptId) {
+                if (thisPlayer === player) {
+                    sendEvent('exit', {
+                        current_time_s: Math.floor(player.getCurrentTime() || 0),
+                        video_duration_s: Math.floor(player.getDuration() || 0)
+                    });
+                }
+            });
+            
+            // Detectar saída da página
+            $(window).on('beforeunload', function() {
+                if (player && player.getPlayerState && player.getPlayerState() !== 0) { 
+                    sendEvent('exit', {
+                        current_time_s: Math.floor(player.getCurrentTime() || 0),
+                        video_duration_s: Math.floor(player.getDuration() || 0)
+                    });
+                }
+            });
+        });
+    });
+})(jQuery);

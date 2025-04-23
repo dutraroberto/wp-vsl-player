@@ -10,7 +10,7 @@
  * @since      1.4.0
  */
 
-(function() {
+(function($) {
   'use strict';
   
   console.log('[VSL Analytics] Script carregado!');
@@ -143,108 +143,173 @@
   });
 
   /**
-   * Configura o monitoramento do player YouTube
+   * Configura o monitoramento do player YouTube usando os eventos jQuery
    */
   function setupYouTubeTracking() {
-    console.log('[VSL Analytics] Configurando tracking do YouTube Player');
+    console.log('[VSL Analytics] Configurando tracking do YouTube Player via eventos jQuery');
 
-        // Variáveis para controlar o tracking
+    // Variáveis para controlar o tracking
     let progressInterval = null;
     let lastProgressTime = 0;
-    let lastPercent = 0;
     let progressMilestones = [10, 25, 50, 75, 100];
     let sentMilestones = {};
-    let progressPollingActive = false;
 
-    // Função que monitora a variável global do player
-    function checkForYTPlayer() {
-      // Se o player já está disponível
-      if (window.vslYTPlayer && typeof window.vslYTPlayer.addEventListener === 'function') {
-        console.log('[VSL Analytics] YouTube Player encontrado, adicionando listener');
+    // Detectar quando o player estiver pronto
+    $(document).on('YT.PlayerReady', function(event, player, scriptId) {
+      if (!player) {
+        console.log('[VSL Analytics] Player não disponível no evento YT.PlayerReady');
+        return;
+      }
+      
+      console.log('[VSL Analytics] Player detectado via evento YT.PlayerReady:', player);
+      
+      // Obter ID do container
+      const containerId = player.getIframe().id.replace('-inner', '');
+      const $container = $('#' + containerId);
+      
+      console.log('[VSL Analytics] Container do player:', containerId);
+      
+      // Verificar overlay de início e adicionar listener
+      const $startOverlay = $container.find('.vsl-start-overlay');
+      if ($startOverlay.length) {
+        console.log('[VSL Analytics] Overlay de início encontrado, adicionando listener');
         
-        // Adicione o listener para mudanças de estado
-        window.vslYTPlayer.addEventListener('onStateChange', function(state) {
-          console.log('[VSL Analytics] Estado do player alterado:', state.data);
-          
-          // Verifica se é o estado PLAYING (1)
-          if (state.data === YT.PlayerState.PLAYING) {
-            // Só registra o play se o usuário clicou no botão
-            if (window.VSL_Player_Interaction.userClicked && !window.VSL_Player_Interaction.firstPlaySent) {
-              console.log('[VSL Analytics] Primeiro play pelo usuário detectado, enviando evento');
-              window.VSL_Player_Interaction.firstPlaySent = true;
-              sendAnalytics('play');
-            }
-            // Iniciar monitoramento de progresso SEMPRE que o vídeo tocar
-            if (!progressPollingActive) {
-              progressPollingActive = true;
-              console.log('[VSL Analytics] Iniciando monitoramento de progresso via polling.');
-              progressInterval = setInterval(function() {
-                try {
-                  if (window.vslYTPlayer && typeof window.vslYTPlayer.getCurrentTime === 'function' && typeof window.vslYTPlayer.getDuration === 'function') {
-                    const currentTime = Math.floor(window.vslYTPlayer.getCurrentTime());
-                    const duration = Math.floor(window.vslYTPlayer.getDuration());
-                    if (duration > 0) {
-                      const percent = Math.round((currentTime / duration) * 100);
-                      // Log detalhado
-                      console.log(`[VSL Analytics] (Polling) Progresso atual: ${currentTime}s de ${duration}s (${percent}%)`);
-                      // Envio por marcos percentuais
-                      progressMilestones.forEach(function(milestone) {
-                        if (percent >= milestone && !sentMilestones[milestone]) {
-                          sentMilestones[milestone] = true;
-                          console.log(`[VSL Analytics] (Polling) Enviando progresso: ${milestone}% (${currentTime}s)`);
-                          sendAnalytics('progress', { progress_sec: currentTime, progress_percent: milestone });
-                        }
-                      });
-                      // Envio por tempo (a cada 10s)
-                      if (currentTime > lastProgressTime + 10) {
-                        lastProgressTime = currentTime;
-                        console.log('[VSL Analytics] (Polling) Enviando progresso (tempo):', currentTime);
-                        sendAnalytics('progress', { progress_sec: currentTime });
-                      }
-                    } else {
-                      console.log('[VSL Analytics] (Polling) Duração do vídeo ainda não disponível.');
-                    }
-                  } else {
-                    console.log('[VSL Analytics] (Polling) Player YouTube ou métodos não disponíveis.');
-                  }
-                } catch(e) {
-                  console.error('[VSL Analytics] (Polling) Erro no monitoramento de progresso:', e);
-                }
-              }, 1000); // Polling a cada 1 segundo
-            }
-          } else if (state.data === YT.PlayerState.ENDED) {
-            // Vídeo completo
-            console.log('[VSL Analytics] Vídeo completado');
-            if (window.vslYTPlayer && typeof window.vslYTPlayer.getDuration === 'function') {
-              sendAnalytics('complete', { 
-                progress_sec: Math.floor(window.vslYTPlayer.getDuration()),
-                progress_percent: 100
-              });
-            }
+        $startOverlay.off('click.analytics').on('click.analytics', function() {
+          if (!window.VSL_Player_Interaction.firstPlaySent) {
+            console.log('[VSL Analytics] Clique no overlay detectado, enviando evento play');
+            window.VSL_Player_Interaction.userClicked = true;
+            window.VSL_Player_Interaction.firstPlaySent = true;
             
-            // Limpar intervalo de progresso
-            if (progressInterval) {
-              clearInterval(progressInterval);
-              progressInterval = null;
-            }
-            progressPollingActive = false;
-            // Resetar milestones para próxima reprodução
-            sentMilestones = {};
-            lastProgressTime = 0;
+            sendAnalytics('play', {
+              progress_sec: Math.floor(player.getCurrentTime() || 0)
+            });
+            
+            // Iniciar monitoramento de progresso
+            startProgressTracking(player);
           }
         });
-
-        // Removemos o intervalo de verificação após encontrar o player
-        clearInterval(checkInterval);
+      } else {
+        console.log('[VSL Analytics] Overlay de início não encontrado');
+      }
+      
+      // Detectar estado de reprodução do vídeo
+      $(document).on('YT.PlayerState.PLAYING', function(e, thisPlayer, thisScriptId) {
+        if (thisPlayer === player) {
+          console.log('[VSL Analytics] Vídeo está sendo reproduzido');
+          
+          // Se não há overlay mas o usuário interagiu com o player
+          if (window.VSL_Player_Interaction.userClicked && !window.VSL_Player_Interaction.firstPlaySent) {
+            console.log('[VSL Analytics] Primeiro play pelo usuário detectado via evento');
+            window.VSL_Player_Interaction.firstPlaySent = true;
+            
+            sendAnalytics('play', {
+              progress_sec: Math.floor(player.getCurrentTime() || 0)
+            });
+          }
+          
+          // Iniciar monitoramento de progresso se já tiver play
+          if (window.VSL_Player_Interaction.firstPlaySent) {
+            startProgressTracking(player);
+          }
+        }
+      });
+      
+      // Detectar fim do vídeo
+      $(document).on('YT.PlayerState.ENDED', function(e, thisPlayer, thisScriptId) {
+        if (thisPlayer === player) {
+          console.log('[VSL Analytics] Vídeo completado (via evento)');
+          
+          sendAnalytics('complete', { 
+            progress_sec: Math.floor(player.getDuration() || 0),
+            progress_percent: 100
+          });
+          
+          // Limpar intervalo de progresso
+          stopProgressTracking();
+        }
+      });
+      
+      // Detectar saída da página
+      $(window).on('beforeunload', function() {
+        if (player && player.getPlayerState && player.getPlayerState() !== 0) {
+          console.log('[VSL Analytics] Usuário saindo da página');
+          
+          sendAnalytics('exit', {
+            progress_sec: Math.floor(player.getCurrentTime() || 0),
+            progress_percent: Math.round((player.getCurrentTime() / player.getDuration()) * 100)
+          });
+        }
+      });
+    });
+    
+    // Função para iniciar o monitoramento de progresso
+    function startProgressTracking(player) {
+      // Evita múltiplos intervalos
+      stopProgressTracking();
+      
+      console.log('[VSL Analytics] Iniciando monitoramento de progresso');
+      
+      // Monitorar progresso a cada 2 segundos
+      progressInterval = setInterval(function() {
+        try {
+          if (player && typeof player.getCurrentTime === 'function' && 
+              typeof player.getDuration === 'function' && 
+              player.getPlayerState && player.getPlayerState() === 1) { // Verificar se está tocando
+            
+            const currentTime = Math.floor(player.getCurrentTime());
+            const duration = Math.floor(player.getDuration());
+            
+            if (duration > 0) {
+              const percent = Math.round((currentTime / duration) * 100);
+              
+              // Log detalhado
+              console.log(`[VSL Analytics] Progresso atual: ${currentTime}s de ${duration}s (${percent}%)`);
+              
+              // Envio por marcos percentuais
+              progressMilestones.forEach(function(milestone) {
+                if (percent >= milestone && !sentMilestones[milestone]) {
+                  sentMilestones[milestone] = true;
+                  console.log(`[VSL Analytics] Enviando progresso: ${milestone}% (${currentTime}s)`);
+                  
+                  sendAnalytics('progress', { 
+                    progress_sec: currentTime, 
+                    progress_percent: milestone 
+                  });
+                }
+              });
+              
+              // Envio por tempo (a cada 10s)
+              if (currentTime > lastProgressTime + 10) {
+                lastProgressTime = currentTime;
+                console.log('[VSL Analytics] Enviando progresso (tempo):', currentTime);
+                
+                sendAnalytics('progress', { 
+                  progress_sec: currentTime 
+                });
+              }
+            }
+          }
+        } catch(e) {
+          console.error('[VSL Analytics] Erro no monitoramento de progresso:', e);
+        }
+      }, 2000); // Verificar a cada 2 segundos
+    }
+    
+    // Função para parar o monitoramento de progresso
+    function stopProgressTracking() {
+      if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+        
+        // Resetar para próxima reprodução
+        sentMilestones = {};
+        lastProgressTime = 0;
       }
     }
-
-    // Verificar a cada 500ms se o player está disponível
-    const checkInterval = setInterval(checkForYTPlayer, 500);
   }
 
   // Expor funções globalmente para uso em outros scripts
   window.vslAnalytics = {
     sendEvent: sendAnalytics
   };
-})();
+})(jQuery);
