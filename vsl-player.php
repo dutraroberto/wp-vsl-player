@@ -41,7 +41,7 @@ require __DIR__ . '/plugin-update-checker/plugin-update-checker.php';
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 
 $updateChecker = PucFactory::buildUpdateChecker(
-    'https://plugins.mundowpl.com.br/wp-vsl-player/info.json',
+    'https://plugins.mundowp.com.br/wp-vsl-player/info.json',
     __FILE__,
     'wp-vsl-player'
 );
