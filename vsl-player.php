@@ -36,12 +36,24 @@ register_deactivation_hook(__FILE__, array('VSL_Player_License', 'deactivate'));
 
 // Plugin Update Checker    
 
-require __DIR__ . '/plugin-update-checker/plugin-update-checker.php';
-
-use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
-
-$updateChecker = PucFactory::buildUpdateChecker(
-    'https://plugins.mundowp.com.br/wp-vsl-player/info.json',
-    __FILE__,
-    'wp-vsl-player'
-);
+// Verificar se o arquivo plugin-update-checker.php existe antes de incluí-lo
+$update_checker_path = __DIR__ . '/plugin-update-checker/plugin-update-checker.php';
+if (file_exists($update_checker_path)) {
+    require $update_checker_path;
+    
+    use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+    
+    $updateChecker = PucFactory::buildUpdateChecker(
+        'https://plugins.mundowp.com.br/wp-vsl-player/info.json',
+        __FILE__,
+        'wp-vsl-player'
+    );
+} else {
+    // Adiciona um aviso no painel administrativo se o arquivo não for encontrado
+    add_action('admin_notices', function() {
+        echo '<div class="notice notice-warning"><p>';
+        echo 'O sistema de atualização automática do plugin WP-VSL-Player não está disponível. ';
+        echo 'A pasta <code>plugin-update-checker</code> está faltando.';
+        echo '</p></div>';
+    });
+}
