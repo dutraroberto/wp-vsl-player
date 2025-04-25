@@ -33,3 +33,15 @@ run_vsl_player();
 
 // Register deactivation hook to clean up cron
 register_deactivation_hook(__FILE__, array('VSL_Player_License', 'deactivate'));
+
+// Plugin Update Checker    
+
+require __DIR__ . '/plugin-update-checker/plugin-update-checker.php';
+
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+
+$updateChecker = PucFactory::buildUpdateChecker(
+    'https://plugins.mundowpl.com.br/wp-vsl-player/info.json',
+    __FILE__,
+    'wp-vsl-player'
+);
