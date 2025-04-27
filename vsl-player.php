@@ -3,7 +3,7 @@
  * Plugin Name: WP VSL Player
  * Plugin URI: https://mundowp.com.br/plugins/wp-vsl-player/
  * Description: Crie facilmente player otimizados para Vendas!
- * Version: 1.4.1
+ * Version: 1.4.0
  * Author: Roberto Dutra
  * Author URI: https://mundowp.com.br
  * Text Domain: wp-vsl-player
@@ -17,7 +17,7 @@ if (!defined('WPINC')) {
 }
 
 // Define plugin constants
-define('VSL_PLAYER_VERSION', '1.4.1');
+define('VSL_PLAYER_VERSION', '1.4.0');
 define('VSL_PLAYER_DIR', plugin_dir_path(__FILE__));
 define('VSL_PLAYER_URL', plugin_dir_url(__FILE__));
 
