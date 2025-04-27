@@ -98,7 +98,7 @@
         $('.vsl-player-container').addClass('vsl-player-ready');
     }
     
-    // Exportar funções para uso global (útil para debugging)
+    // Exportar funções para uso global
     window.vslPlayerLoading = {
         hideLoadingScreen: hideLoadingScreen,
         hideAllLoadingScreens: hideAllLoadingScreens,

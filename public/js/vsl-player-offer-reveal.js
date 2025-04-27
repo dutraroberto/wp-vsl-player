@@ -175,7 +175,7 @@
                         clearInterval(timePollingIntervals[containerId]);
                     }
                 } catch (e) {
-                    console.error('[VSL Player] Error accessing player:', e);
+                    // Error accessing player silenciado em produção
                 }
             }
         }, 500);

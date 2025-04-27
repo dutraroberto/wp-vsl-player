@@ -17,38 +17,38 @@
      * @param {String} playerId - ID of the player container
      */
     function initSmartHooks(player, playerId) {
-        console.log('[VSL Smart Hooks] Inicializando Smart Hooks para o player', playerId);
+
         
         const $container = $('#' + playerId);
         
         // Verificar se o recurso está ativado
         const isEnabled = $container.data('smart-hooks-enabled') === true;
-        console.log('[VSL Smart Hooks] Smart Hooks está ativado?', isEnabled);
+
         
         if (!isEnabled) {
-            console.log('[VSL Smart Hooks] Smart Hooks está desativado para este player. Encerrando inicialização.');
+
             return;
         }
 
         try {
             // Extrair os hooks dos atributos data
             let hooks = $container.data('smart-hooks');
-            console.log('[VSL Smart Hooks] Dados de hooks obtidos:', hooks);
+
             
             // Se os hooks ainda estiverem em formato string (JSON), parse eles
             if (typeof hooks === 'string') {
                 try {
                     hooks = JSON.parse(hooks);
-                    console.log('[VSL Smart Hooks] Hooks parseados de string JSON:', hooks);
+
                 } catch (e) {
-                    console.error('[VSL Smart Hooks] Erro ao fazer parse dos hooks:', e);
+
                     return;
                 }
             }
             
             // Verificar se há hooks válidos
             if (!hooks || !hooks.length) {
-                console.log('[VSL Smart Hooks] Nenhum hook configurado para este player.');
+
                 return;
             }
 
@@ -58,30 +58,29 @@
             
             // Criar container para as imagens dos hooks
             if ($('#' + playerId + ' .vsl-smart-hooks-container').length === 0) {
-                console.log('[VSL Smart Hooks] Criando container para os hooks.');
+
                 $container.append('<div class="vsl-smart-hooks-container"></div>');
             } else {
-                console.log('[VSL Smart Hooks] Container para hooks já existe.');
+
             }
             
-            // Debug: informações detalhadas de cada hook
-            console.log(`[VSL Smart Hooks] ${hooks.length} hooks configurados:`);
+
             hooks.forEach((hook, index) => {
-                console.log(`[VSL Smart Hooks] Hook #${index}:`);
-                console.log(`  - Nome: ${hook.name}`);
-                console.log(`  - Imagem: ${hook.image}`);
-                console.log(`  - Tempo início: ${hook.start}s`);
-                console.log(`  - Tempo fim: ${hook.end}s`);
+
+
+
+
+
                 
                 // Pré-carregando a imagem para evitar problemas de carregamento tardio
                 if (hook.image) {
                     const preloadImg = new Image();
                     preloadImg.src = hook.image;
                     preloadImg.onload = function() {
-                        console.log(`[VSL Smart Hooks] Imagem pré-carregada com sucesso: ${hook.image}`);
+
                     };
                     preloadImg.onerror = function() {
-                        console.error(`[VSL Smart Hooks] ERRO ao pré-carregar imagem: ${hook.image}`);
+
                     };
                 }
             });
@@ -94,9 +93,9 @@
             // Armazenar o ID do intervalo para poder limpar depois se necessário
             $container.data('smart-hooks-interval', intervalId);
             
-            console.log('[VSL Smart Hooks] Monitoramento de tempo iniciado com intervalo de', checkInterval, 'ms');
+
         } catch (error) {
-            console.error('[VSL Smart Hooks] Erro ao inicializar hooks:', error);
+            // Erro ao inicializar hooks silenciado em produção
         }
     }
 
@@ -137,16 +136,16 @@
                     // Ativar hook - mostrar a imagem
                     showHook(hookId, hook, $container);
                     activeHooks[playerId][hookId] = true;
-                    console.log(`[VSL Smart Hooks] Mostrando hook "${hook.name}" em ${currentTime.toFixed(2)}s (intervalo: ${start}s - ${end}s)`);
+
                 } else if (!shouldBeActive && isActive) {
                     // Desativar hook - ocultar a imagem
                     hideHook(hookId, $container);
                     activeHooks[playerId][hookId] = false;
-                    console.log(`[VSL Smart Hooks] Ocultando hook "${hook.name}" em ${currentTime.toFixed(2)}s (fora do intervalo: ${start}s - ${end}s)`);
+
                 }
             });
         } catch (error) {
-            console.error('[VSL Smart Hooks] Erro ao verificar tempos dos hooks:', error);
+
         }
     }
 
@@ -159,8 +158,8 @@
     function showHook(hookId, hook, $container) {
         // Verificar se o elemento já existe
         if ($('#' + hookId).length === 0) {
-            console.log(`[VSL Smart Hooks] Criando elemento para o hook "${hook.name}"`);
-            console.log(`[VSL Smart Hooks] URL da imagem: ${hook.image}`);
+
+
             
             // Criar elemento para o hook
             const $hook = $('<div>', {
@@ -180,11 +179,11 @@
             
             // Log de depuração quando a imagem carregar ou falhar
             $img.on('load', function() {
-                console.log(`[VSL Smart Hooks] Imagem carregada com sucesso para hook "${hook.name}"`);
+
             });
             
             $img.on('error', function() {
-                console.error(`[VSL Smart Hooks] ERRO ao carregar imagem para hook "${hook.name}". URL: ${hook.image}`);
+
             });
             
             $hook.append($img);

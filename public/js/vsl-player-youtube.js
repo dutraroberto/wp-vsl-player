@@ -495,7 +495,7 @@
                 }
             });
         } catch (e) {
-            console.error('VSL Player: Error creating YouTube player - ', e);
+            // Error creating YouTube player silenciado em produção
         }
     }
     
@@ -536,19 +536,19 @@
         if (window.VSLPlayer && window.VSLPlayer.SmartHooks && typeof window.VSLPlayer.SmartHooks.init === 'function') {
             // Verificar se os ganchos inteligentes estão habilitados para este player
             var smartHooksEnabled = $container.data('smart-hooks-enabled');
-            console.log('[VSL Player] Smart Hooks habilitado para player ' + containerId + '?', smartHooksEnabled);
+
             
             if (smartHooksEnabled === true || smartHooksEnabled === 'true') {
                 // Verificar se há dados de hooks
                 var smartHooksData = $container.data('smart-hooks');
-                console.log('[VSL Player] Dados dos Smart Hooks:', smartHooksData);
+
                 
                 // Inicializar imediatamente, os scripts já foram carregados pela classe-public.php
                 try {
                     window.VSLPlayer.SmartHooks.init(player, containerId);
-                    console.log('[VSL Player] Smart Hooks inicializado para player', containerId);
+
                 } catch (e) {
-                    console.error('[VSL Player] Erro ao inicializar Smart Hooks:', e);
+                    // Erro ao inicializar Smart Hooks silenciado em produção
                 }
             }
         }
@@ -583,7 +583,7 @@
      * YouTube player onError event handler
      */
     function onPlayerError(event) {
-        console.error('VSL Player: Player error - ' + event.data);
+        // Player error silenciado em produção
     }
     
 })(jQuery);
