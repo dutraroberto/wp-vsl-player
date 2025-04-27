@@ -21,6 +21,9 @@ define('VSL_PLAYER_VERSION', '1.4.0');
 define('VSL_PLAYER_DIR', plugin_dir_path(__FILE__));
 define('VSL_PLAYER_URL', plugin_dir_url(__FILE__));
 
+// Import classes for plugin update checker
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+
 // Include necessary files
 require_once VSL_PLAYER_DIR . 'includes/class-vsl-player.php';
 
@@ -41,8 +44,6 @@ register_deactivation_hook(__FILE__, array('VSL_Player_License', 'deactivate'));
 $update_checker_path = __DIR__ . '/plugin-update-checker/plugin-update-checker.php';
 if (file_exists($update_checker_path)) {
     require $update_checker_path;
-    
-    use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
     
     $updateChecker = PucFactory::buildUpdateChecker(
         'https://plugins.mundowp.com.br/wp-vsl-player/info.json', // URL do arquivo JSON com informações de atualização
