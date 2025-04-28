@@ -35,6 +35,12 @@ O WP VSL Player é um plugin que otimiza a reprodução de vídeos do YouTube em
 
 Para adquirir uma licença, visite: [https://mundowp.com.br/plugins/vsl-para-wordpress/](https://mundowp.com.br/plugins/vsl-para-wordpress/)
 
+## Próximas atualizações
+- Sistema de analytics
+- Suporte para vídeos em outras proporções (atualmente 16:9)
+- Possibilidade para desativar o Autoplay
+- Novos botões de player
+
 ## Histórico de Versões
 
 ### Versão 1.4.0 – Adição de Recurso
