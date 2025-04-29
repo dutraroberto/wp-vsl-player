@@ -42,13 +42,15 @@
             }
         });
         
-        // Reinicia a barra quando o vídeo for reiniciado
-        $(document).on('YT.PlayerState.ENDED', function(e, player, scriptId) {
+        // Reinicia a barra quando o vídeo for reiniciado - namespace para evitar conflitos
+        $(document).on('YT.PlayerState.ENDED.progressBar', function(e, player, scriptId) {
+            console.log('[Progress Bar] Vídeo terminou, resetando barra de progresso para ' + scriptId);
             resetProgressBar(scriptId);
             // Oculta a barra quando o vídeo terminar
             if (progressBars[scriptId]) {
                 progressBars[scriptId].container.hide();
             }
+            // IMPORTANTE: Não manipular o player aqui, deixe o overlay de fim cuidar disso
         });
         
         // Detecta cliques nos overlays de play/pause para identificar interação do usuário

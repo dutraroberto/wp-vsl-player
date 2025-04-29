@@ -1,0 +1,81 @@
+/**
+ * Estilos para o overlay de fim de vídeo
+ */
+.vsl-end-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 1);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    color: white;
+    text-align: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* Classes auxiliares para garantir que o overlay fique completamente oculto */
+.vsl-hidden {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    z-index: -9999 !important;
+    pointer-events: none !important;
+}
+
+.vsl-force-hidden {
+    position: absolute !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    border: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.vsl-end-message {
+    margin-bottom: 30px;
+}
+
+.vsl-end-message h3 {
+    font-size: 24px;
+    margin: 0 0 15px;
+    color: white;
+    font-weight: 600;
+}
+
+.vsl-watch-again-button {
+    background-color: #617be5;
+    border: none;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vsl-watch-again-button:hover {
+    background-color: #4a60c7;
+}
+
+.vsl-replay-icon {
+    display: inline-block;
+    margin-right: 8px;
+    width: 18px;
+    height: 18px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
