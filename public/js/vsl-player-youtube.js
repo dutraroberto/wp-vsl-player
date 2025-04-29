@@ -485,8 +485,7 @@
                     'rel': 0,
                     'showinfo': 0,
                     'modestbranding': 1,
-                    'loop': 1,
-                    'playlist': videoId // Required for looping when using player parameters
+                    'loop': 0,
                 },
                 events: {
                     'onReady': onPlayerReady,
@@ -564,12 +563,15 @@
         var containerId = iframe.id.replace('-inner', '');
         var scriptId = containerId.replace('vsl-player-', '');
         
+
+        
         if (state === YT.PlayerState.ENDED) {
-            // Loop the video from the beginning
-            event.target.seekTo(0);
+            // Disparar o evento para que o overlay de fim seja exibido
             
-            // Trigger an event for the progress bar
+            // Trigger an event for the progress bar and end overlay
             $(document).trigger('YT.PlayerState.ENDED', [player, scriptId]);
+            
+
         } else if (state === YT.PlayerState.PLAYING) {
             // Trigger an event for the progress bar
             $(document).trigger('YT.PlayerState.PLAYING', [player, scriptId]);

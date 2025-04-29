@@ -6,6 +6,13 @@
 (function($) {
     'use strict';
     
+    // Logger para debug
+    function vslResumeLog(message, data) {
+        console.log('%c[VSL Resume] ' + message, 'background: #4a6da7; color: white; padding: 2px 5px; border-radius: 3px;', data || '');
+    }
+    
+    vslResumeLog('Script de retomada carregado');
+    
     // Variáveis globais
     var resumeOverlays = {};
     var saveInterval = 5000; // Salvar a cada 5 segundos
@@ -16,6 +23,7 @@
      * Inicializar o recurso de continuar assistindo para todos os players
      */
     function initializeResumeFeature() {
+        vslResumeLog('Inicializando recurso de retomada');
         // Precisamos executar isso antes que o player do YouTube seja inicializado
         $('.vsl-player-container').each(function() {
             var $container = $(this);
@@ -25,18 +33,24 @@
             
             if (containerId && vslId) {
                 if (enableResumePlayer) {
+                    vslResumeLog('Player habilitado para retomada:', { containerId: containerId, vslId: vslId });
                     // Verificar se existe um tempo salvo
                     var savedTime = getSavedTime(vslId);
+                    vslResumeLog('Tempo salvo encontrado:', { vslId: vslId, savedTime: savedTime });
                     
                     if (savedTime && savedTime > 0) {
+                        vslResumeLog('Preparando overlay de retomada para o player', { containerId: containerId, vslId: vslId, savedTime: savedTime });
                         // Marcar este player como em processo de inicialização
                         isInitializingPlayer[vslId] = true;
                         
                         // Impedir a inicialização automática do YouTube Player
                         $container.attr('data-resume-pending', 'true');
+                        vslResumeLog('Atributo data-resume-pending definido como true');
                         
                         // Criar o overlay de resumo para este player
                         createResumeOverlay($container, containerId, vslId, savedTime);
+                    } else {
+                        vslResumeLog('Nenhum tempo salvo para retomada', { vslId: vslId });
                     }
                 } else {
                     // Resume player desativado, limpar qualquer tempo salvo
@@ -77,12 +91,14 @@
             }
         });
         
-        // Limpar o tempo quando o vídeo terminar
-        $(document).on('YT.PlayerState.ENDED', function(event, player, scriptId) {
+        // Limpar o tempo quando o vídeo terminar - com namespace para evitar conflitos
+        $(document).on('YT.PlayerState.ENDED.resumePlayer', function(event, player, scriptId) {
             var playerId = 'vsl-player-' + scriptId;
             var $container = $('#' + playerId);
             var vslId = $container.data('vsl-id');
             var enableResumePlayer = $container.data('enable-resume-player') === true || $container.data('enable-resume-player') === 'true';
+            
+            vslResumeLog('Vídeo terminou, limpando dados de retomada', { scriptId: scriptId, vslId: vslId });
             
             if (vslId && enableResumePlayer) {
                 // Limpar o tempo salvo quando o vídeo terminar
@@ -93,6 +109,9 @@
                     clearInterval(playerIntervals[vslId]);
                     playerIntervals[vslId] = null;
                 }
+                
+                // IMPORTANTE: Não manipular o player aqui, deixe o overlay de fim cuidar disso
+                vslResumeLog('Aguardando overlay de fim mostrar');
             }
         });
     }
@@ -153,6 +172,16 @@
             var scriptId = vslId;
             $(document).trigger('vsl.userInitiatedPlay', [scriptId]);
             
+            // Notificar o vsl-analytics.js sobre a interação do usuário
+            if (window.VSL_Player_Interaction) {
+                vslResumeLog('Notificando analytics sobre a ação de continuar assistindo', { action: 'continue', time: savedTime });
+                window.VSL_Player_Interaction.userClicked = true;
+                window.VSL_Player_Interaction.resumeActive = false;
+                $(document).trigger('vsl.resumeAction', ['continue', savedTime]);
+            } else {
+                vslResumeLog('ERRO: VSL_Player_Interaction não está disponível');
+            }
+            
             // Inicializar o player do YouTube se ainda não estiver inicializado
             initializeVideoPlayer($container, containerId, vslId, savedTime);
             
@@ -174,6 +203,16 @@
             // Acionar o evento userInitiatedPlay para ativar a barra de progresso falsa
             var scriptId = vslId;
             $(document).trigger('vsl.userInitiatedPlay', [scriptId]);
+            
+            // Notificar o vsl-analytics.js sobre a interação do usuário
+            if (window.VSL_Player_Interaction) {
+                vslResumeLog('Notificando analytics sobre a ação de reiniciar vídeo');
+                window.VSL_Player_Interaction.userClicked = true;
+                window.VSL_Player_Interaction.resumeActive = false;
+                $(document).trigger('vsl.resumeAction', ['restart', 0]);
+            } else {
+                vslResumeLog('ERRO: VSL_Player_Interaction não está disponível');
+            }
             
             // Inicializar o player do YouTube se ainda não estiver inicializado
             initializeVideoPlayer($container, containerId, vslId, 0);
@@ -206,11 +245,15 @@
      * Inicializar o player de vídeo após a escolha do usuário
      */
     function initializeVideoPlayer($container, containerId, vslId, startTime) {
+        vslResumeLog('Inicializando player de vídeo', { containerId: containerId, vslId: vslId, startTime: startTime });
+        
         // Verificar se o player já existe
         var player = window['vslYouTubePlayer_' + vslId];
+        vslResumeLog('Verificação de player existente:', { playerExists: !!player });
         
         if (player) {
             // O player já existe, apenas definir o tempo de início e reproduzir
+            vslResumeLog('Player já existe, definindo tempo e iniciando', { startTime: startTime });
             player.seekTo(startTime);
             player.playVideo();
             player.unMute();
@@ -228,9 +271,11 @@
         } else {
             // Verificar se há um evento personalizado para inicializar o player
             // que será capturado pelo vsl-player-youtube.js
+            vslResumeLog('Player não existe, disparando evento de inicialização', { vslId: vslId, startTime: startTime });
             $(document).trigger('VSL.InitializePlayer', [$container, vslId, startTime]);
             
             // Adicionar um temporizador de verificação para ver se o player já foi inicializado
+            vslResumeLog('Iniciando verificação periódica de inicialização do player');
             checkPlayerInitialization($container, vslId, startTime);
         }
     }
@@ -296,7 +341,9 @@
             
             // Apenas salvar se o tempo for maior que 0 e o vídeo não estiver no final
             if (currentTime > 0 && duration > 0 && currentTime < duration - 10) {
-                localStorage.setItem('vsl_resume_time_' + vslId, currentTime);
+                var key = 'vsl_resume_time_' + vslId;
+                localStorage.setItem(key, currentTime);
+                vslResumeLog('Tempo salvo', { key: key, currentTime: currentTime, duration: duration });
             }
         }
     }
@@ -305,7 +352,9 @@
      * Obter o tempo salvo para um vídeo
      */
     function getSavedTime(vslId) {
-        var savedTime = localStorage.getItem('vsl_resume_time_' + vslId);
+        var savedTimeKey = 'vsl_resume_time_' + vslId;
+        var savedTime = localStorage.getItem(savedTimeKey);
+        vslResumeLog('Buscando tempo salvo', { key: savedTimeKey, value: savedTime });
         return savedTime ? parseFloat(savedTime) : 0;
     }
     
@@ -313,7 +362,9 @@
      * Limpar o tempo salvo para um vídeo
      */
     function clearSavedTime(vslId) {
-        localStorage.removeItem('vsl_resume_time_' + vslId);
+        var key = 'vsl_resume_time_' + vslId;
+        vslResumeLog('Limpando tempo salvo', { key: key });
+        localStorage.removeItem(key);
     }
     
     /**
@@ -329,8 +380,16 @@
     // Inicializar o recurso quando o documento estiver pronto
     // É importante que isso seja executado antes da inicialização do YouTube Player
     $(document).ready(function() {
+        vslResumeLog('Documento pronto, inicializando recurso de retomada');
         // Inicializar imediatamente para marcar os players que têm tempo salvo
         initializeResumeFeature();
     });
+    
+    // Expor algumas funções para debug
+    window.vslResumeDebug = {
+        getSavedTime: getSavedTime,
+        clearSavedTime: clearSavedTime,
+        log: vslResumeLog
+    };
     
 })(jQuery);

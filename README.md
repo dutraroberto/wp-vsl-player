@@ -43,6 +43,10 @@ Para adquirir uma licença, visite: [https://mundowp.com.br/plugins/vsl-para-wor
 
 ## Histórico de Versões
 
+### Versão 1.4.1 – Correção
+- Correção: Correção de erros menores.
+- Melhoria: Melhorias no desempenho.
+
 ### Versão 1.4.0 – Adição de Recurso
 - Nova funcionalidade: Atualizações automáticas pelo painel do WorPress.
 - Correção: Correção de erros menores.

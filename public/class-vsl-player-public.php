@@ -120,6 +120,22 @@ class VSL_Player_Public {
             true
         );
         
+        // Registrar o CSS e JS do recurso de overlay de fim de vídeo
+        wp_register_style(
+            'vsl-player-end-overlay',
+            VSL_PLAYER_URL . 'public/css/vsl-player-end-overlay.css',
+            array(),
+            VSL_PLAYER_VERSION
+        );
+        
+        wp_register_script(
+            'vsl-player-end-overlay',
+            VSL_PLAYER_URL . 'public/js/vsl-player-end-overlay.js',
+            array('jquery', 'vsl-player-youtube'),
+            VSL_PLAYER_VERSION,
+            true
+        );
+        
         // Registrar o CSS e JS do recurso de rastreamento de conversões
         wp_register_style(
             'vsl-player-conversions',
@@ -400,7 +416,22 @@ class VSL_Player_Public {
             wp_enqueue_script('vsl-player-progress-bar');
         }
         
+        // Se o resume player estiver ativado, carregue os arquivos relacionados
+        // IMPORTANTE: Isso deve ser carregado ANTES do analytics para evitar conflitos
+        if ($enable_resume_player) {
+            error_log('[VSL Player] Carregando scripts de resume para o player ' . $post_id);
+            wp_enqueue_style('vsl-player-resume');
+            wp_enqueue_script('vsl-player-resume');
+        }
+        
+        // Carregar o overlay de fim de vídeo para todos os players
+        // Este deve ser carregado após o YouTube player, mas antes do analytics
+        error_log('[VSL Player] Carregando scripts de overlay de fim para o player ' . $post_id);
+        wp_enqueue_style('vsl-player-end-overlay');
+        wp_enqueue_script('vsl-player-end-overlay');
+        
         // Ativar o sistema de analytics para este player
+        // Este script deve ser carregado DEPOIS do resume player
         if (isset($vsl_analytics)) {
             error_log('[VSL Player] Ativando analytics para o player ' . $post_id . ' com ID do YouTube ' . $video_id);
             $vsl_analytics->enqueue_analytics($post_id, $video_id);

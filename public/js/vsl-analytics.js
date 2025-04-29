@@ -13,13 +13,23 @@
 (function($) {
   'use strict';
   
+  // Função de log para debug
+  function vslAnalyticsLog(message, data) {
+    console.log('%c[VSL Analytics] ' + message, 'background: #e74c3c; color: white; padding: 2px 5px; border-radius: 3px;', data || '');
+  }
+  
+  vslAnalyticsLog('Script de analytics carregado');
+  
 
 
   // Vamos rastrear a interação do usuário com o vídeo
   window.VSL_Player_Interaction = {
     userClicked: false,
-    firstPlaySent: false
+    firstPlaySent: false,
+    resumeActive: false // Flag para indicar se o recurso de retomada está ativo
   };
+  
+  vslAnalyticsLog('VSL_Player_Interaction inicializado', window.VSL_Player_Interaction);
 
   // Função para gerar UUID compatível com todos navegadores
   function generateUUID() {
@@ -43,10 +53,10 @@
    * @param {Object} extra - Dados adicionais para o evento
    */
   function sendAnalytics(event, extra = {}) {
-
+    vslAnalyticsLog('Tentando enviar analytics', { event: event, extra: extra });
     
     if (!window.VSL_ANALYTICS || !window.VSL_ANALYTICS.nonce) {
-
+      vslAnalyticsLog('ERRO: VSL_ANALYTICS não está configurado corretamente', window.VSL_ANALYTICS);
       return;
     }
 
@@ -115,6 +125,25 @@
       });
     });
 
+    // Verificar se temos players com retomada pendente
+    $('.vsl-player-container').each(function() {
+      var resumePending = $(this).attr('data-resume-pending') === 'true';
+      var containerId = $(this).attr('id');
+      vslAnalyticsLog('Verificando se o player está em modo de retomada', { 
+        containerId: containerId, 
+        resumePending: resumePending,
+        atributo: $(this).attr('data-resume-pending')
+      });
+      
+      if (resumePending) {
+        window.VSL_Player_Interaction.resumeActive = true;
+        vslAnalyticsLog('Player em modo de retomada detectado', { 
+          containerId: containerId, 
+          VSL_Player_Interaction: window.VSL_Player_Interaction 
+        });
+      }
+    });
+    
     // Monitorar o player do YouTube
     setupYouTubeTracking();
 
@@ -153,6 +182,17 @@
     let lastProgressTime = 0;
     let progressMilestones = [10, 25, 50, 75, 100];
     let sentMilestones = {};
+    
+    // Escutar o evento personalizado de ação de retomada
+    $(document).on('vsl.resumeAction', function(e, action, timePosition) {
+      vslAnalyticsLog('Evento vsl.resumeAction recebido', { action: action, timePosition: timePosition });
+      // Enviar evento analítico para a ação de retomada
+      sendAnalytics('resume_action', {
+        action: action, // 'continue' ou 'restart'
+        progress_sec: Math.floor(timePosition || 0)
+      });
+    });
+
 
     // Detectar quando o player estiver pronto
     $(document).on('YT.PlayerReady', function(event, player, scriptId) {
@@ -169,25 +209,64 @@
       
 
       
+      // Verificar se este container está em modo de retomada
+      const isResumePending = $container.attr('data-resume-pending') === 'true';
+      const vslId = $container.data('vsl-id');
+      vslAnalyticsLog('Verificando estado do container', { 
+        containerId: containerId, 
+        vslId: vslId,
+        isResumePending: isResumePending, 
+        atributoValor: $container.attr('data-resume-pending')
+      });
+      
       // Verificar overlay de início e adicionar listener
       const $startOverlay = $container.find('.vsl-start-overlay');
+      vslAnalyticsLog('Overlay de início encontrado', {
+        containerId: containerId,
+        overlayEncontrado: $startOverlay.length > 0
+      });
       if ($startOverlay.length) {
 
-        
-        $startOverlay.off('click.analytics').on('click.analytics', function() {
-          if (!window.VSL_Player_Interaction.firstPlaySent) {
+        // Só registre o evento de clique se não estiver em modo de retomada
+        if (!isResumePending) {
+          $startOverlay.off('click.analytics').on('click.analytics', function() {
+            if (!window.VSL_Player_Interaction.firstPlaySent) {
 
+              window.VSL_Player_Interaction.userClicked = true;
+              window.VSL_Player_Interaction.firstPlaySent = true;
+              
+              sendAnalytics('play', {
+                progress_sec: Math.floor(player.getCurrentTime() || 0)
+              });
+              
+              // Iniciar monitoramento de progresso
+              startProgressTracking(player);
+            }
+          });
+        }
+        
+        // Também monitorar os botões de retomada na overlay de resumo
+        const $resumeOverlay = $container.find('.vsl-resume-overlay');
+        vslAnalyticsLog('Overlay de resumo encontrado', {
+          containerId: containerId,
+          overlayEncontrado: $resumeOverlay.length > 0
+        });
+        if ($resumeOverlay.length) {
+          $resumeOverlay.find('.vsl-resume-continue, .vsl-resume-restart').off('click.analytics').on('click.analytics', function() {
             window.VSL_Player_Interaction.userClicked = true;
             window.VSL_Player_Interaction.firstPlaySent = true;
             
-            sendAnalytics('play', {
-              progress_sec: Math.floor(player.getCurrentTime() || 0)
-            });
-            
-            // Iniciar monitoramento de progresso
-            startProgressTracking(player);
-          }
-        });
+            setTimeout(function() {
+              sendAnalytics('play', {
+                progress_sec: Math.floor(player.getCurrentTime() || 0),
+                resume: $(this).hasClass('vsl-resume-continue') ? 'continue' : 'restart'
+              });
+              
+              // Iniciar monitoramento de progresso
+              startProgressTracking(player);
+            }, 1000); // Pequeno delay para garantir que o player foi inicializado
+          });
+        }
       } else {
 
       }
@@ -195,30 +274,48 @@
       // Detectar estado de reprodução do vídeo
       $(document).on('YT.PlayerState.PLAYING', function(e, thisPlayer, thisScriptId) {
         if (thisPlayer === player) {
-
+          // Verificar se o container tem o atributo de retomada pendente
+          const $playerContainer = $('#vsl-player-' + thisScriptId);
+          const isResumePending = $playerContainer.attr('data-resume-pending') === 'true';
           
-          // Se não há overlay mas o usuário interagiu com o player
-          if (window.VSL_Player_Interaction.userClicked && !window.VSL_Player_Interaction.firstPlaySent) {
-
-            window.VSL_Player_Interaction.firstPlaySent = true;
+          vslAnalyticsLog('Estado do player ao receber evento PLAYING', {
+            scriptId: thisScriptId,
+            playerContainerId: $playerContainer.attr('id'),
+            isResumePending: isResumePending,
+            atributoValor: $playerContainer.attr('data-resume-pending'),
+            userClicked: window.VSL_Player_Interaction.userClicked,
+            firstPlaySent: window.VSL_Player_Interaction.firstPlaySent,
+            resumeActive: window.VSL_Player_Interaction.resumeActive
+          });
+          
+          // Se não estiver em modo de retomada, processe normalmente
+          if (!isResumePending) {
+            // Se não há overlay mas o usuário interagiu com o player
+            if (window.VSL_Player_Interaction.userClicked && !window.VSL_Player_Interaction.firstPlaySent) {
+              window.VSL_Player_Interaction.firstPlaySent = true;
+              
+              sendAnalytics('play', {
+                progress_sec: Math.floor(player.getCurrentTime() || 0)
+              });
+            }
             
-            sendAnalytics('play', {
-              progress_sec: Math.floor(player.getCurrentTime() || 0)
-            });
-          }
-          
-          // Iniciar monitoramento de progresso se já tiver play
-          if (window.VSL_Player_Interaction.firstPlaySent) {
-            startProgressTracking(player);
+            // Iniciar monitoramento de progresso se já tiver play
+            if (window.VSL_Player_Interaction.firstPlaySent) {
+              startProgressTracking(player);
+            }
+          } else {
+            // Em modo de retomada, deixe o player-resume gerenciar o player
+            // Não enviaremos analytics automaticamente até que o usuário faça uma escolha
           }
         }
       });
       
-      // Detectar fim do vídeo
-      $(document).on('YT.PlayerState.ENDED', function(e, thisPlayer, thisScriptId) {
+      // Detectar fim do vídeo - usar namespace para evitar conflitos
+      $(document).on('YT.PlayerState.ENDED.analytics', function(e, thisPlayer, thisScriptId) {
         if (thisPlayer === player) {
-
+          vslAnalyticsLog('Vídeo terminou, registrando evento complete', { scriptId: thisScriptId });
           
+          // Registrar evento de conclusão do vídeo
           sendAnalytics('complete', { 
             progress_sec: Math.floor(player.getDuration() || 0),
             progress_percent: 100
@@ -226,6 +323,9 @@
           
           // Limpar intervalo de progresso
           stopProgressTracking();
+          
+          // IMPORTANTE: Não manipular o player aqui, deixe o overlay de fim cuidar disso
+          vslAnalyticsLog('Aguardando overlay de fim exibir');
         }
       });
       
@@ -247,7 +347,13 @@
       // Evita múltiplos intervalos
       stopProgressTracking();
       
-
+      // Não iniciar monitoramento se o vídeo estiver em modo de retomada e o usuário ainda não fez uma escolha
+      vslAnalyticsLog('Verificando se deve iniciar monitoramento de progresso', window.VSL_Player_Interaction);
+      if (window.VSL_Player_Interaction.resumeActive && !window.VSL_Player_Interaction.userClicked) {
+        vslAnalyticsLog('Monitoramento não iniciado pois o vídeo está em modo de retomada e o usuário não interagiu');
+        return;
+      }
+      vslAnalyticsLog('Iniciando monitoramento de progresso');
       
       // Monitorar progresso a cada 2 segundos
       progressInterval = setInterval(function() {
@@ -310,6 +416,17 @@
 
   // Expor funções globalmente para uso em outros scripts
   window.vslAnalytics = {
-    sendEvent: sendAnalytics
+    sendEvent: sendAnalytics,
+    log: vslAnalyticsLog,
+    debug: function() {
+      return {
+        interaction: window.VSL_Player_Interaction,
+        resumePendingPlayers: $('.vsl-player-container[data-resume-pending="true"]').length,
+        resumeOverlays: $('.vsl-resume-overlay').length
+      };
+    }
   };
+  
+  // Log de debug final após setup
+  vslAnalyticsLog('Setup de analytics concluído');
 })(jQuery);
