@@ -37,6 +37,7 @@ class VSL_Player {
         require_once VSL_PLAYER_DIR . 'includes/class-vsl-analytics-rest.php';
         require_once VSL_PLAYER_DIR . 'includes/class-vsl-analytics.php';
         require_once VSL_PLAYER_DIR . 'includes/class-vsl-analytics-data.php';
+        require_once VSL_PLAYER_DIR . 'includes/class-vsl-videos-table.php';
     }
 
     /**
@@ -48,6 +49,9 @@ class VSL_Player {
         
         // Initialize custom post types
         $cpt = new VSL_Player_CPT();
+        
+        // Initialize videos table manager
+        $videos_table = new VSL_Videos_Table();
         
         // Initialize license
         $license = new VSL_Player_License();

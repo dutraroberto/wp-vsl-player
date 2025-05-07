@@ -48,14 +48,26 @@
             loadAnalyticsData();
         });
         
-        // Carregar dados iniciais
-        loadAnalyticsData();
+        // Exibir mensagem inicial solicitando seleção de vídeo
+        $('.vsl-analytics-loading').hide();
+        $('.vsl-analytics-charts').hide();
+        $('.vsl-no-data').show().html('<p>Por favor, selecione um vídeo e clique em Aplicar Filtros para visualizar as métricas.</p>');
     });
     
     /**
      * Carrega os dados de analytics do servidor
      */
     function loadAnalyticsData() {
+        // Verificar se um vídeo foi selecionado
+        const videoId = $('#video_filter').val();
+        if (!videoId) {
+            // Exibir mensagem solicitando a seleção de um vídeo
+            $('.vsl-analytics-loading').hide();
+            $('.vsl-analytics-charts').hide();
+            $('.vsl-no-data').show().html('<p>Por favor, selecione um vídeo para visualizar suas métricas.</p>');
+            return;
+        }
+        
         // Obter o valor atual do toggle explicitamente como booleano
         // O .prop('checked') retorna true ou false para checkboxes
         const groupUrls = $('#group_urls').prop('checked') === true ? true : false;
@@ -63,7 +75,7 @@
         console.log('Estado atual do toggle:', groupUrls); // Para debug
         
         const filters = {
-            video_id: $('#video_filter').val(),
+            video_id: videoId,
             date_start: $('#date_start').val(),
             date_end: $('#date_end').val(),
             // Novas opções

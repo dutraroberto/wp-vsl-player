@@ -32,11 +32,13 @@ class VSL_Analytics_Installer {
 		global $wpdb;
 		
 		$charset_collate = $wpdb->get_charset_collate();
-		$table_name = $wpdb->prefix . 'vsl_sessions';
+		
+		// Tabela de sessões
+		$sessions_table = $wpdb->prefix . 'vsl_sessions';
 
-		// Verifica se a tabela já existe para evitar erros
-		if ( $wpdb->get_var( "SHOW TABLES LIKE '$table_name'" ) !== $table_name ) {
-			$sql = "CREATE TABLE $table_name (
+		// Verifica se a tabela de sessões já existe para evitar erros
+		if ( $wpdb->get_var( "SHOW TABLES LIKE '$sessions_table'" ) !== $sessions_table ) {
+			$sql = "CREATE TABLE $sessions_table (
 				session_id        CHAR(36)    NOT NULL,
 				video_post_id     BIGINT      UNSIGNED NOT NULL,
 				youtube_video_id  VARCHAR(20) NOT NULL,
@@ -52,6 +54,22 @@ class VSL_Analytics_Installer {
 				utm_campaign      VARCHAR(100) NULL,
 				PRIMARY KEY (session_id, video_post_id),
 				KEY video_date (video_post_id, first_impression)
+			) $charset_collate;";
+
+			require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+			dbDelta( $sql );
+		}
+		
+		// Nova tabela de vídeos
+		$videos_table = $wpdb->prefix . 'vsl_videos';
+		
+		// Verifica se a tabela de vídeos já existe para evitar erros
+		if ( $wpdb->get_var( "SHOW TABLES LIKE '$videos_table'" ) !== $videos_table ) {
+			$sql = "CREATE TABLE $videos_table (
+				video_post_id     BIGINT      UNSIGNED NOT NULL,
+				youtube_video_id  VARCHAR(20) NOT NULL,
+				video_duration_sec INT         DEFAULT 0,
+				PRIMARY KEY (video_post_id)
 			) $charset_collate;";
 
 			require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );

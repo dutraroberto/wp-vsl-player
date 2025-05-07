@@ -25,6 +25,13 @@
     font-weight: 600;
 }
 
+.filter-description {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #757575;
+    font-style: italic;
+}
+
 .vsl-analytics-filter-group select,
 .vsl-analytics-filter-group input {
     min-width: 200px;

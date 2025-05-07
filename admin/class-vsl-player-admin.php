@@ -550,14 +550,15 @@ class VSL_Player_Admin {
                 <div class="vsl-analytics-filters">
                     <div class="vsl-analytics-filter-group">
                         <label for="video_filter"><?php echo esc_html__('Selecione o Vídeo:', 'vsl-player'); ?></label>
-                        <select id="video_filter" name="video_filter">
-                            <option value=""><?php echo esc_html__('Todos os Vídeos', 'vsl-player'); ?></option>
+                        <select id="video_filter" name="video_filter" required>
+                            <option value="" disabled selected><?php echo esc_html__('Escolha um vídeo...', 'vsl-player'); ?></option>
                             <?php foreach ($vsl_players as $player): ?>
                                 <option value="<?php echo esc_attr($player->ID); ?>">
                                     <?php echo esc_html($player->post_title); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
+                        <p class="filter-description"><?php echo esc_html__('Por favor, selecione um vídeo para visualizar suas métricas.', 'vsl-player'); ?></p>
                     </div>
                     
                     <div class="vsl-analytics-filter-group">
