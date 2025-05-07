@@ -69,6 +69,16 @@ class VSL_Player_Admin {
             'vsl-player-support',
             array($this, 'display_support_page')
         );
+        
+        // Submenu for analytics
+        add_submenu_page(
+            'edit.php?post_type=vsl_player',
+            __('Analytics', 'vsl-player'),
+            __('Analytics', 'vsl-player'),
+            'manage_options',
+            'vsl-player-analytics',
+            array($this, 'display_analytics_page')
+        );
     }
 
     /**
@@ -465,6 +475,25 @@ class VSL_Player_Admin {
                         ); 
                         ?>
                     </p>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+    
+    /**
+     * Display the analytics page content.
+     */
+    public function display_analytics_page() {
+        ?>
+        <div class="wrap vsl-player-admin">
+            <h1><?php echo esc_html__('VSL Player Otimizado - Analytics', 'vsl-player'); ?></h1>
+            
+            <div class="vsl-analytics-container">
+                <!-- O conteúdo real da página será adicionado posteriormente -->
+                <div class="analytics-placeholder">
+                    <span class="dashicons dashicons-chart-bar"></span>
+                    <p><?php echo esc_html__('Em breve: Estatísticas e análises de desempenho para seus VSLs.', 'vsl-player'); ?></p>
                 </div>
             </div>
         </div>
