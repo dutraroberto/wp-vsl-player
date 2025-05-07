@@ -56,12 +56,18 @@
      * Carrega os dados de analytics do servidor
      */
     function loadAnalyticsData() {
+        // Obter o valor atual do toggle explicitamente como booleano
+        // O .prop('checked') retorna true ou false para checkboxes
+        const groupUrls = $('#group_urls').prop('checked') === true ? true : false;
+        
+        console.log('Estado atual do toggle:', groupUrls); // Para debug
+        
         const filters = {
             video_id: $('#video_filter').val(),
             date_start: $('#date_start').val(),
             date_end: $('#date_end').val(),
             // Novas opções
-            group_urls: $('#group_urls').is(':checked'),
+            group_urls: groupUrls, // Garantir que seja boolean true/false
             utm_source: $('#utm_source_filter').val(),
             utm_campaign: $('#utm_campaign_filter').val()
         };
@@ -118,7 +124,10 @@
         renderDevicesChart(data.devices);
         
         // Atualizar estado do toggle de agrupamento de URLs
-        $('#group_urls').prop('checked', data.filters.group_urls);
+        // Comparar explicitamente com true para garantir um valor booleano correto
+        const isGrouped = data.filters.group_urls === true;
+        console.log('Valor retornado do servidor para group_urls:', data.filters.group_urls, 'Convertido para:', isGrouped);
+        $('#group_urls').prop('checked', isGrouped);
         
         // Preencher tabela de origens
         populateReferrersTable(data.referrers, data.filters.group_urls);

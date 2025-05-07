@@ -37,7 +37,15 @@ class VSL_Analytics_Data {
         $date_end = isset($filters['date_end']) && !empty($filters['date_end']) ? sanitize_text_field($filters['date_end']) : date('Y-m-d');
         
         // Opções de visualização e filtros
-        $group_urls = isset($filters['group_urls']) ? (bool)$filters['group_urls'] : false;
+        // Converter explicitamente para booleano e garantir que seja true ou false
+        $group_urls = false;
+        if (isset($filters['group_urls'])) {
+            // Tratar diferentes tipos de entrada como "true"
+            $group_urls_value = $filters['group_urls'];
+            if ($group_urls_value === 'true' || $group_urls_value === '1' || $group_urls_value === 1 || $group_urls_value === true) {
+                $group_urls = true;
+            }
+        }
         $utm_source_filter = isset($filters['utm_source']) ? sanitize_text_field($filters['utm_source']) : '';
         $utm_campaign_filter = isset($filters['utm_campaign']) ? sanitize_text_field($filters['utm_campaign']) : '';
         
