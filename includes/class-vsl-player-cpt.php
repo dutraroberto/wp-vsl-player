@@ -159,22 +159,56 @@ class VSL_Player_CPT {
         $shortcode = '[vsl_player id="' . $post->ID . '"]';
         ?>
         <div class="vsl-meta-box-container">
-            <!-- SEÇÃO: CONFIGURAÇÕES GERAIS -->
+            <!-- Vídeo do YouTube -->
             <div class="vsl-settings-section">
                 <div class="vsl-section-header">
-                    <span class="dashicons dashicons-admin-generic"></span>
-                    <h2><?php echo esc_html__('Configurações Gerais', 'vsl-player'); ?></h2>
+                    <span class="dashicons dashicons-video-alt3"></span>
+                    <h2><?php echo esc_html__('Vídeo do YouTube', 'vsl-player'); ?></h2>
                 </div>
                 <div class="vsl-section-content">
-                    <!-- URL do YouTube -->
                     <div class="vsl-field-row">
                         <div class="vsl-field-label">
-                            <label for="vsl_youtube_url"><?php echo esc_html__('URL do YouTube', 'vsl-player'); ?></label>
-                            <p class="description"><?php echo esc_html__('Insira a URL completa do vídeo do YouTube', 'vsl-player'); ?></p>
+                            <label for="vsl_youtube_url"><?php echo esc_html__('URL do Vídeo', 'vsl-player'); ?></label>
+                            <p class="description"><?php echo esc_html__('Cole aqui a URL completa do vídeo no YouTube.', 'vsl-player'); ?></p>
                         </div>
                         <div class="vsl-field-input">
-                            <input type="text" id="vsl_youtube_url" name="vsl_youtube_url" value="<?php echo esc_attr($youtube_url); ?>" 
-                                  class="regular-text" placeholder="https://www.youtube.com/watch?v=xyz123">
+                            <input type="url" id="vsl_youtube_url" name="vsl_youtube_url" value="<?php echo esc_attr($youtube_url); ?>" 
+                                   class="widefat" placeholder="https://www.youtube.com/watch?v=...">
+                                   
+                            <?php
+                            // Verificar se temos a duração do vídeo na tabela wp_vsl_videos
+                            global $wpdb;
+                            $duration = 0;
+                            if (!empty($post->ID)) {
+                                $table_name = $wpdb->prefix . 'vsl_videos';
+                                $duration = $wpdb->get_var($wpdb->prepare(
+                                    "SELECT video_duration_sec FROM $table_name WHERE video_post_id = %d",
+                                    $post->ID
+                                ));
+                            }
+                             
+                            // Formatar a duração para exibição se disponível
+                            $formatted_duration = '';
+                            $display_style = 'display: none;';
+                             
+                            if (!empty($duration) && $duration > 0) {
+                                $hours = floor($duration / 3600);
+                                $minutes = floor(($duration % 3600) / 60);
+                                $seconds = floor($duration % 60);
+                                 
+                                if ($hours > 0) {
+                                    $formatted_duration = $hours . ':' . str_pad($minutes, 2, '0', STR_PAD_LEFT) . ':' . str_pad($seconds, 2, '0', STR_PAD_LEFT);
+                                } else {
+                                    $formatted_duration = $minutes . ':' . str_pad($seconds, 2, '0', STR_PAD_LEFT);
+                                }
+                                 
+                                $display_style = '';
+                            }
+                            ?>
+                             
+                            <div id="vsl-video-duration-container" style="<?php echo $display_style; ?>">
+                                <p><?php echo esc_html__('Duração do vídeo:', 'vsl-player'); ?> <span id="vsl-video-duration" class="vsl-duration-value"><?php echo $formatted_duration; ?></span></p>
+                            </div>
                         </div>
                     </div>
                     

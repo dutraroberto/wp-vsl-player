@@ -21,6 +21,12 @@ class VSL_Videos_Table {
         
         // Garantir que todos os vídeos existentes sejam adicionados na tabela
         add_action('admin_init', array($this, 'populate_existing_videos'));
+        
+        // Adicionar AJAX endpoint para atualizar a duração do vídeo
+        add_action('wp_ajax_vsl_update_video_duration', array($this, 'ajax_update_video_duration'));
+        
+        // Adicionar JavaScript e CSS para a página de edição do post
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
     }
 
     /**
@@ -150,6 +156,123 @@ class VSL_Videos_Table {
         ));
     }
 
+    /**
+     * Carrega scripts e estilos na página de administração
+     *
+     * @param string $hook Hook atual da página admin
+     */
+    public function enqueue_admin_scripts($hook) {
+        global $post;
+        
+        // Verificar se estamos na página de edição do post vsl_player
+        if (($hook === 'post.php' || $hook === 'post-new.php') && 
+            is_object($post) && $post->post_type === 'vsl_player') {
+            
+            // Registrar e enfileirar o script
+            wp_register_script(
+                'vsl-video-duration', 
+                VSL_PLAYER_URL . 'admin/js/vsl-video-duration.js', 
+                array('jquery'), 
+                VSL_PLAYER_VERSION, 
+                true
+            );
+            
+            // Adicionar nonce para segurança
+            wp_localize_script('vsl-video-duration', 'vsl_duration_nonce', wp_create_nonce('vsl_duration_nonce'));
+            
+            // Enfileirar o script
+            wp_enqueue_script('vsl-video-duration');
+            
+            // Adicionar CSS inline para o container de duração
+            wp_add_inline_style('wp-admin', '
+                #vsl-video-duration-container {
+                    margin-top: 10px;
+                    padding: 8px 12px;
+                    background-color: #f7f7f7;
+                    border-left: 4px solid #617be5;
+                    display: none;
+                }
+                #vsl-video-duration-container p {
+                    margin: 0;
+                    font-size: 13px;
+                }
+                .vsl-duration-value {
+                    font-weight: bold;
+                }
+            ');
+        }
+    }
+    
+    /**
+     * Processa as requisições AJAX para atualizar a duração do vídeo
+     */
+    public function ajax_update_video_duration() {
+        // Verificar nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'vsl_duration_nonce')) {
+            wp_send_json_error('Erro de segurança: nonce inválido');
+            return;
+        }
+        
+        // Verificar parâmetros necessários
+        if (!isset($_POST['post_id']) || !isset($_POST['duration'])) {
+            wp_send_json_error('Parâmetros inválidos');
+            return;
+        }
+        
+        $post_id = intval($_POST['post_id']);
+        $duration = intval($_POST['duration']);
+        
+        // Verificar permissões
+        if (!current_user_can('edit_post', $post_id)) {
+            wp_send_json_error('Permissão negada');
+            return;
+        }
+        
+        // Verificar tipo de post
+        if (get_post_type($post_id) !== 'vsl_player') {
+            wp_send_json_error('Tipo de post inválido');
+            return;
+        }
+        
+        // Atualizar a duração
+        $result = $this->update_video_duration($post_id, $duration);
+        
+        if ($result) {
+            wp_send_json_success(array(
+                'message' => 'Duração do vídeo atualizada com sucesso',
+                'duration' => $duration,
+                'formatted_duration' => $this->format_duration($duration)
+            ));
+        } else {
+            wp_send_json_error('Erro ao atualizar duração do vídeo');
+        }
+    }
+    
+    /**
+     * Formata a duração em segundos para um formato legível (HH:MM:SS)
+     *
+     * @param int $seconds Duração em segundos
+     * @return string Duração formatada
+     */
+    private function format_duration($seconds) {
+        $hours = floor($seconds / 3600);
+        $minutes = floor(($seconds % 3600) / 60);
+        $secs = floor($seconds % 60);
+        
+        $formatted = '';
+        
+        if ($hours > 0) {
+            $formatted .= $hours . ':';
+            $formatted .= str_pad($minutes, 2, '0', STR_PAD_LEFT) . ':';
+        } else {
+            $formatted .= $minutes . ':';
+        }
+        
+        $formatted .= str_pad($secs, 2, '0', STR_PAD_LEFT);
+        
+        return $formatted;
+    }
+    
     /**
      * Atualiza a duração de um vídeo na tabela wp_vsl_videos
      *
