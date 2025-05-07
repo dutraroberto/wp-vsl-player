@@ -13,6 +13,31 @@ class VSL_Player_Admin {
         
         // Add admin scripts and styles
         add_action('admin_enqueue_scripts', array($this, 'enqueue_scripts'));
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_styles'));
+    }
+    
+    /**
+     * Register the stylesheets for the admin area.
+     */
+    public function enqueue_styles() {
+        // Verifica se está na página de analytics para remover notificações
+        if (isset($_GET['page']) && $_GET['page'] === 'vsl-player-analytics') {
+            add_action('admin_head', array($this, 'hide_admin_notices'));
+        }
+    }
+    
+    /**
+     * Esconde notificações do WordPress na página de analytics
+     */
+    public function hide_admin_notices() {
+        echo '<style type="text/css">
+            .notice, .updated, .update-nag, .error, .is-dismissible { display: none !important; }
+            #wpbody-content > .wrap > h1.wp-heading-inline + .page-title-action { display: none !important; }
+            .wrap h1.vsl-analytics-title { margin-top: 15px; }
+        </style>';
+        // Remover todas as ações que adicionam notificações
+        remove_all_actions('admin_notices');
+        remove_all_actions('all_admin_notices');
     }
 
     /**
@@ -542,10 +567,10 @@ class VSL_Player_Admin {
             'order' => 'ASC'
         ]);
         ?>
-        <div class="wrap vsl-player-admin">
-            <h1><?php echo esc_html__('VSL Player Otimizado - Analytics', 'vsl-player'); ?></h1>
+        <div class="wrap vsl-player-admin vsl-analytics-wrap-fullwidth">
+            <h1 class="vsl-analytics-title"><?php echo esc_html__('VSL Player Otimizado - Analytics', 'vsl-player'); ?></h1>
             
-            <div class="vsl-analytics-container">
+            <div class="vsl-analytics-container vsl-analytics-fullwidth">
                 <!-- Filtros -->
                 <div class="vsl-analytics-filters">
                     <div class="vsl-analytics-filter-group">
@@ -561,12 +586,27 @@ class VSL_Player_Admin {
                         <p class="filter-description"><?php echo esc_html__('Por favor, selecione um vídeo para visualizar suas métricas.', 'vsl-player'); ?></p>
                     </div>
                     
-                    <div class="vsl-analytics-filter-group">
+                    <div class="vsl-analytics-filter-group date-filter-group">
+                        <label for="date_range"><?php echo esc_html__('Período:', 'vsl-player'); ?></label>
+                        <select id="date_range" name="date_range" class="date-range-select">
+                            <option value="custom"><?php echo esc_html__('Personalizado', 'vsl-player'); ?></option>
+                            <option value="today"><?php echo esc_html__('Hoje', 'vsl-player'); ?></option>
+                            <option value="yesterday"><?php echo esc_html__('Ontem', 'vsl-player'); ?></option>
+                            <option value="last7days"><?php echo esc_html__('Últimos 7 dias', 'vsl-player'); ?></option>
+                            <option value="last14days"><?php echo esc_html__('Últimos 14 dias', 'vsl-player'); ?></option>
+                            <option value="last28days"><?php echo esc_html__('Últimos 28 dias', 'vsl-player'); ?></option>
+                            <option value="thisMonth"><?php echo esc_html__('Este mês', 'vsl-player'); ?></option>
+                            <option value="lastMonth"><?php echo esc_html__('Mês passado', 'vsl-player'); ?></option>
+                            <option value="last90days"><?php echo esc_html__('Últimos 90 dias', 'vsl-player'); ?></option>
+                        </select>
+                    </div>
+                    
+                    <div class="vsl-analytics-filter-group date-input-group">
                         <label for="date_start"><?php echo esc_html__('Data Inicial:', 'vsl-player'); ?></label>
                         <input type="text" id="date_start" name="date_start" class="vsl-datepicker" placeholder="AAAA-MM-DD">
                     </div>
                     
-                    <div class="vsl-analytics-filter-group">
+                    <div class="vsl-analytics-filter-group date-input-group">
                         <label for="date_end"><?php echo esc_html__('Data Final:', 'vsl-player'); ?></label>
                         <input type="text" id="date_end" name="date_end" class="vsl-datepicker" placeholder="AAAA-MM-DD">
                     </div>
@@ -586,8 +626,18 @@ class VSL_Player_Admin {
                 <!-- Cards de resumo -->
                 <div class="vsl-analytics-summary">
                     <div class="vsl-analytics-card">
-                        <h3><?php echo esc_html__('Total de Visualizações', 'vsl-player'); ?></h3>
+                        <h3><?php echo esc_html__('Visualizações no Player', 'vsl-player'); ?></h3>
+                        <div class="value" id="iframe_views">0</div>
+                    </div>
+                    
+                    <div class="vsl-analytics-card">
+                        <h3><?php echo esc_html__('Cliques no Player', 'vsl-player'); ?></h3>
                         <div class="value" id="total_views">0</div>
+                    </div>
+                    
+                    <div class="vsl-analytics-card">
+                        <h3><?php echo esc_html__('Taxa de Cliques no Player', 'vsl-player'); ?></h3>
+                        <div class="value" id="play_rate">0%</div>
                     </div>
                     
                     <div class="vsl-analytics-card">
@@ -604,33 +654,34 @@ class VSL_Player_Admin {
                         <h3><?php echo esc_html__('Total de Cliques CTA', 'vsl-player'); ?></h3>
                         <div class="value" id="total_cta_clicks">0</div>
                     </div>
-                    
-                    <div class="vsl-analytics-card">
-                        <h3><?php echo esc_html__('Taxa de Cliques no Player', 'vsl-player'); ?></h3>
-                        <div class="value" id="play_rate">0%</div>
-                    </div>
                 </div>
                 
                 <!-- Área de gráficos -->
                 <div class="vsl-analytics-charts">
                     <!-- Gráfico de retenção -->
-                    <h3 class="section-title"><?php echo esc_html__('Retenção de Audiência', 'vsl-player'); ?></h3>
-                    <div class="chart-container">
-                        <div id="video-duration-info" class="vsl-video-info" style="display:none;margin-bottom:10px;padding:8px 12px;background:#f7f7f7;border-left:4px solid #617be5;font-size:14px;"></div>
-                        <canvas id="retention-chart"></canvas>
+                    <div class="chart-main-container">
+                        <div class="chart-header">
+                            <h3 class="section-title"><?php echo esc_html__('Retenção de Audiência', 'vsl-player'); ?></h3>
+                            <div id="video-duration-info" class="vsl-video-info"></div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="retention-chart"></canvas>
+                        </div>
                     </div>
                     
                     <!-- Gráficos de dispositivos e origens -->
                     <div class="charts-row">
-                        <div class="chart-column">
-                            <h3 class="section-title"><?php echo esc_html__('Dispositivos Utilizados', 'vsl-player'); ?></h3>
+                        <div class="chart-main-container">
+                            <div class="chart-header">
+                                <h3 class="section-title"><?php echo esc_html__('Dispositivos Utilizados', 'vsl-player'); ?></h3>
+                            </div>
                             <div class="chart-pie-container">
                                 <canvas id="devices-chart"></canvas>
                             </div>
                         </div>
                         
-                        <div class="chart-column">
-                            <div class="referrers-options">
+                        <div class="chart-main-container">
+                            <div class="chart-header">
                                 <h3 class="section-title"><?php echo esc_html__('Origens das Visualizações (Top 10)', 'vsl-player'); ?></h3>
                                 <div class="url-grouping-toggle">
                                     <label for="group_urls"><?php echo esc_html__('Agrupar URLs sem parâmetros', 'vsl-player'); ?></label>

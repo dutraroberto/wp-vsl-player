@@ -14,10 +14,18 @@
     
     // Inicialização
     $(document).ready(function() {
-        // Inicializar datepicker
+        // Inicializar datepicker com design melhorado e formato brasileiro
         $('.vsl-datepicker').datepicker({
-            dateFormat: 'yy-mm-dd',
-            maxDate: 0
+            dateFormat: 'dd/mm/yy', // Formato brasileiro dd/mm/aaaa
+            maxDate: 0,
+            showOtherMonths: true,
+            selectOtherMonths: true,
+            changeMonth: true,
+            changeYear: true,
+            showAnim: 'fadeIn',
+            dayNamesMin: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
+            monthNamesShort: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+            firstDay: 0
         });
         
         // Definir data inicial como 30 dias atrás por padrão
@@ -31,6 +39,73 @@
         if ($('#date_end').val() === '') {
             $('#date_end').datepicker('setDate', new Date());
         }
+        
+        // Função para atualizar os campos de data com base no período selecionado
+        $('#date_range').on('change', function() {
+            const today = new Date();
+            let startDate = new Date();
+            let endDate = new Date();
+            
+            // Configura as datas com base na opção selecionada
+            switch($(this).val()) {
+                case 'today': // Hoje
+                    startDate = new Date(today);
+                    endDate = new Date(today);
+                    break;
+                    
+                case 'yesterday': // Ontem
+                    startDate = new Date(today);
+                    startDate.setDate(startDate.getDate() - 1);
+                    endDate = new Date(startDate);
+                    break;
+                    
+                case 'last7days': // Últimos 7 dias
+                    startDate.setDate(startDate.getDate() - 6);
+                    break;
+                    
+                case 'last14days': // Últimos 14 dias
+                    startDate.setDate(startDate.getDate() - 13);
+                    break;
+                    
+                case 'last28days': // Últimos 28 dias
+                    startDate.setDate(startDate.getDate() - 27);
+                    break;
+                    
+                case 'thisMonth': // Este mês
+                    startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                    break;
+                    
+                case 'lastMonth': // Mês passado
+                    startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                    endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+                    break;
+                    
+                case 'last90days': // Últimos 90 dias
+                    startDate.setDate(startDate.getDate() - 89);
+                    break;
+                    
+                case 'custom': // Personalizado - não altera as datas, mas exibe os campos
+                    $('.date-input-group').slideDown(200);
+                    return;
+            }
+            
+            // Atualiza os campos de data
+            $('#date_start').datepicker('setDate', startDate);
+            $('#date_end').datepicker('setDate', endDate);
+            
+            // Se qualquer opção exceto 'custom' for selecionada, oculta os campos de data
+            if ($(this).val() !== 'custom') {
+                $('.date-input-group').slideUp(200);
+            } else {
+                $('.date-input-group').slideDown(200);
+            }
+        });
+        
+        // Definir "Personalizado" como opção padrão do seletor de período
+        $('#date_range').val('custom');
+        
+        // Garantir que os campos de data sejam exibidos inicialmente, já que "Personalizado" é o padrão
+        $('.date-input-group').show();
         
         // Botão de aplicar filtros principais
         $('#apply_filters').on('click', function() {
@@ -70,16 +145,28 @@
         
         // Obter o valor atual do toggle explicitamente como booleano
         // O .prop('checked') retorna true ou false para checkboxes
-        const groupUrls = $('#group_urls').prop('checked') === true ? true : false;
+        const groupUrls = $('#group_urls').prop('checked');
         
         console.log('Estado atual do toggle:', groupUrls); // Para debug
         
+        // Converter datas do formato brasileiro para o formato usado no servidor (yyyy-mm-dd)
+        let dateStart = $('#date_start').val();
+        let dateEnd = $('#date_end').val();
+        
+        // Função para converter data do formato dd/mm/yyyy para yyyy-mm-dd
+        function convertDateFormat(dateString) {
+            if (!dateString) return '';
+            const parts = dateString.split('/');
+            if (parts.length !== 3) return dateString;
+            return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+        
+        // Preparar dados do filtro
         const filters = {
             video_id: videoId,
-            date_start: $('#date_start').val(),
-            date_end: $('#date_end').val(),
-            // Novas opções
-            group_urls: groupUrls, // Garantir que seja boolean true/false
+            date_start: convertDateFormat(dateStart),
+            date_end: convertDateFormat(dateEnd),
+            group_urls: groupUrls,
             utm_source: $('#utm_source_filter').val(),
             utm_campaign: $('#utm_campaign_filter').val()
         };
@@ -160,6 +247,7 @@
         $('#completion_rate').text((data.summary.completion_rate || 0) + '%');
         $('#total_cta_clicks').text(data.cta_clicks || 0);
         $('#play_rate').text((data.play_rate || 0) + '%');
+        $('#iframe_views').text(data.iframe_views || 0);
     }
     
     /**
@@ -215,7 +303,13 @@
                                 const pointIndex = context.dataIndex;
                                 const timePoint = retentionData.timePoints[pointIndex];
                                 const percentage = context.parsed.y;
-                                return `${percentage}% de retenção em ${retentionData.labels[pointIndex]}`;
+                                const viewerCount = retentionData.viewerCounts ? retentionData.viewerCounts[pointIndex] : null;
+                                
+                                if (viewerCount !== null) {
+                                    return `${percentage}% de retenção (${viewerCount} espectadores) em ${retentionData.labels[pointIndex]}`;
+                                } else {
+                                    return `${percentage}% de retenção em ${retentionData.labels[pointIndex]}`;
+                                }
                             }
                         }
                     },

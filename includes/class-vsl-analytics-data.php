@@ -91,6 +91,9 @@ class VSL_Analytics_Data {
         // Calcular taxa de cliques no player
         $play_rate = $this->calculate_play_rate($session_data);
         
+        // Calcular total de visualizações do iframe (sessões únicas)
+        $iframe_views = $this->calculate_iframe_views($session_data);
+        
         // Processar dados de campanhas UTM
         $utm_data = $this->calculate_utm_campaigns($session_data, $utm_source_filter, $utm_campaign_filter);
         
@@ -103,6 +106,7 @@ class VSL_Analytics_Data {
             'referrers' => $referrers_data,
             'cta_clicks' => $cta_clicks,
             'play_rate' => $play_rate,
+            'iframe_views' => $iframe_views, // Nova métrica: visualizações do iframe
             'utm_data' => $utm_data,
             'filters' => array(
                 'group_urls' => $group_urls,
@@ -161,7 +165,14 @@ class VSL_Analytics_Data {
      * @return array Métricas de resumo
      */
     private function calculate_summary_metrics($sessions, $video_id) {
-        $total_views = count($sessions);
+        // Contar apenas as sessões com first_play não nulo (cliques reais no player)
+        $total_views = 0;
+        foreach ($sessions as $session) {
+            if (!empty($session['first_play'])) {
+                $total_views++;
+            }
+        }
+        
         $total_progress = 0;
         $completed = 0;
         
@@ -250,6 +261,7 @@ class VSL_Analytics_Data {
         // Contar quantas sessões assistiram até cada ponto
         $retention_counts = array_fill(0, count($time_points), 0);
         $total_sessions = count($sessions);
+        $viewer_counts = array_fill(0, count($time_points), 0); // Para contagem absoluta de espectadores
         
         foreach ($sessions as $session) {
             $progress = intval($session['max_progress_sec']);
@@ -257,6 +269,7 @@ class VSL_Analytics_Data {
             foreach ($time_points as $index => $time_point) {
                 if ($progress >= $time_point) {
                     $retention_counts[$index]++;
+                    $viewer_counts[$index]++; // Contagem absoluta de espectadores
                 }
             }
         }
@@ -281,7 +294,8 @@ class VSL_Analytics_Data {
             'data' => $retention_percentages,
             'timePoints' => $time_points, // Pontos de tempo brutos em segundos
             'videoDuration' => $max_duration, // Duração total do vídeo
-            'formattedDuration' => $this->format_seconds($max_duration) // Duração formatada
+            'formattedDuration' => $this->format_seconds($max_duration), // Duração formatada
+            'viewerCounts' => $viewer_counts // Número absoluto de espectadores em cada ponto
         );
     }
     
@@ -404,6 +418,26 @@ class VSL_Analytics_Data {
         $play_rate = $total_sessions > 0 ? round(($sessions_with_play / $total_sessions) * 100, 1) : 0;
         
         return $play_rate;
+    }
+    
+    /**
+     * Conta o total de sessões únicas (visualizações do iframe do player)
+     * 
+     * @param array $sessions Dados das sessões
+     * @return int Total de visualizações do iframe
+     */
+    private function calculate_iframe_views($sessions) {
+        // Contagem de session_id únicos
+        $unique_sessions = array();
+        
+        foreach ($sessions as $session) {
+            $session_id = isset($session['session_id']) ? $session['session_id'] : '';
+            if (!empty($session_id) && !in_array($session_id, $unique_sessions)) {
+                $unique_sessions[] = $session_id;
+            }
+        }
+        
+        return count($unique_sessions);
     }
     
     /**
