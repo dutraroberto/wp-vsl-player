@@ -163,7 +163,7 @@
     }
     
     /**
-     * Renderiza o gráfico de retenção de audiência
+     * Renderiza o gráfico de retenção de audiência usando a duração real do vídeo
      */
     function renderRetentionChart(retentionData) {
         const ctx = document.getElementById('retention-chart').getContext('2d');
@@ -173,6 +173,14 @@
             retentionChart.destroy();
         }
         
+        // Adicionar informações sobre a duração do vídeo
+        if (retentionData.formattedDuration) {
+            $('#video-duration-info').html(`<strong>Duração do vídeo:</strong> ${retentionData.formattedDuration}`);
+            $('#video-duration-info').show();
+        } else {
+            $('#video-duration-info').hide();
+        }
+        
         // Criar novo gráfico
         retentionChart = new Chart(ctx, {
             type: 'line',
@@ -180,7 +188,7 @@
                 labels: retentionData.labels,
                 datasets: [{
                     label: 'Retenção de Audiência (%)',
-                    data: retentionData.values,
+                    data: retentionData.data, // Usando o novo nome de propriedade
                     backgroundColor: 'rgba(0, 115, 170, 0.1)',
                     borderColor: 'rgba(0, 115, 170, 1)',
                     borderWidth: 2,
@@ -201,7 +209,15 @@
                     },
                     tooltip: {
                         mode: 'index',
-                        intersect: false
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                const pointIndex = context.dataIndex;
+                                const timePoint = retentionData.timePoints[pointIndex];
+                                const percentage = context.parsed.y;
+                                return `${percentage}% de retenção em ${retentionData.labels[pointIndex]}`;
+                            }
+                        }
                     },
                     title: {
                         display: true,

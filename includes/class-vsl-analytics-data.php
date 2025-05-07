@@ -117,30 +117,34 @@ class VSL_Analytics_Data {
     }
     
     /**
-     * Busca os dados de sessões do banco de dados
+     * Busca os dados de sessões do banco de dados com informações de duração do vídeo
      * 
      * @param int $video_id ID do vídeo para filtrar (0 para todos)
      * @param string $date_start Data inicial no formato Y-m-d
      * @param string $date_end Data final no formato Y-m-d
-     * @return array Array de sessões
+     * @return array Array de sessões com duração do vídeo
      */
     private function get_sessions_data($video_id, $date_start, $date_end) {
         global $wpdb;
         
-        $table_name = $wpdb->prefix . 'vsl_sessions';
+        $sessions_table = $wpdb->prefix . 'vsl_sessions';
+        $videos_table = $wpdb->prefix . 'vsl_videos';
         
-        // Construir consulta SQL
-        $sql = "SELECT * FROM {$table_name} WHERE first_impression >= %s AND first_impression <= %s";
+        // Construir consulta SQL com LEFT JOIN para obter a duração do vídeo
+        $sql = "SELECT s.*, v.video_duration_sec 
+                FROM {$sessions_table} s 
+                LEFT JOIN {$videos_table} v ON s.video_post_id = v.video_post_id 
+                WHERE s.first_impression >= %s AND s.first_impression <= %s";
         $params = array($date_start, $date_end);
         
         // Adicionar filtro de vídeo se especificado
         if ($video_id > 0) {
-            $sql .= " AND video_post_id = %d";
+            $sql .= " AND s.video_post_id = %d";
             $params[] = $video_id;
         }
         
         // Ordenar por data
-        $sql .= " ORDER BY first_impression DESC";
+        $sql .= " ORDER BY s.first_impression DESC";
         
         // Preparar e executar a consulta
         $query = $wpdb->prepare($sql, $params);
@@ -152,8 +156,8 @@ class VSL_Analytics_Data {
     /**
      * Calcula as métricas de resumo com base nos dados das sessões
      * 
-     * @param array $sessions Dados das sessões
-     * @param int $video_id ID do vídeo (usado para buscar a duração)
+     * @param array $sessions Dados das sessões (incluindo video_duration_sec do JOIN)
+     * @param int $video_id ID do vídeo
      * @return array Métricas de resumo
      */
     private function calculate_summary_metrics($sessions, $video_id) {
@@ -161,9 +165,14 @@ class VSL_Analytics_Data {
         $total_progress = 0;
         $completed = 0;
         
-        // Tentar buscar a duração do vídeo se um ID específico foi fornecido
+        // Usar a duração do vídeo da primeira sessão (todas devem ter o mesmo valor)
         $video_duration = 0;
-        if ($video_id > 0) {
+        if (!empty($sessions) && isset($sessions[0]['video_duration_sec'])) {
+            $video_duration = intval($sessions[0]['video_duration_sec']);
+        }
+        
+        // Se não encontrou na tabela de vídeos, tentar buscar dos metadados legados
+        if ($video_duration <= 0 && $video_id > 0) {
             $video_duration = intval(get_post_meta($video_id, '_vsl_player_video_length', true));
         }
         
@@ -186,20 +195,22 @@ class VSL_Analytics_Data {
         // Formatar tempo médio de visualização
         $formatted_time = $this->format_seconds($avg_watch_time);
         
-        // Calcular taxa de conclusão
+        // Calcular taxa de conclusão baseada na duração real do vídeo
         $completion_rate = $total_views > 0 ? round(($completed / $total_views) * 100) : 0;
         
         return array(
             'total_views' => $total_views,
             'avg_watch_time' => $formatted_time,
-            'completion_rate' => $completion_rate
+            'completion_rate' => $completion_rate,
+            'video_duration' => $video_duration, // Adicionando a duração para uso no frontend
+            'formatted_duration' => $this->format_seconds($video_duration)
         );
     }
     
     /**
-     * Calcula os dados de retenção de audiência
+     * Calcula os dados de retenção de audiência usando a duração real do vídeo
      * 
-     * @param array $sessions Dados das sessões
+     * @param array $sessions Dados das sessões com duração do vídeo
      * @param int $video_id ID do vídeo
      * @return array Dados de retenção formatados para Chart.js
      */
@@ -207,24 +218,21 @@ class VSL_Analytics_Data {
         // Determinar a duração máxima do vídeo
         $max_duration = 0;
         
-        // Se temos um ID específico, buscar a duração do vídeo
-        if ($video_id > 0) {
-            $duration = intval(get_post_meta($video_id, '_vsl_player_video_length', true));
-            if ($duration > 0) {
-                $max_duration = $duration;
-            }
+        // Obter duração da tabela wp_vsl_videos (deve estar no resultado do JOIN)
+        if (!empty($sessions) && isset($sessions[0]['video_duration_sec'])) {
+            $max_duration = intval($sessions[0]['video_duration_sec']);
         }
         
-        // Se não temos duração definida, calcular com base nas sessões
+        // Se não encontrou na tabela de vídeos, tentar buscar dos metadados legados
+        if ($max_duration <= 0 && $video_id > 0) {
+            $max_duration = intval(get_post_meta($video_id, '_vsl_player_video_length', true));
+        }
+        
+        // Se ainda não temos duração definida, calcular com base no progresso das sessões
         if ($max_duration == 0) {
             foreach ($sessions as $session) {
                 $max_duration = max($max_duration, intval($session['max_progress_sec']));
             }
-        }
-        
-        // Se ainda não temos duração, definir um valor padrão
-        if ($max_duration == 0) {
-            $max_duration = 300; // 5 minutos como padrão
         }
         
         // Determinar os intervalos para o gráfico de retenção
@@ -253,17 +261,27 @@ class VSL_Analytics_Data {
             }
         }
         
-        // Calcular percentual de retenção
+        // Calcular percentuais de retenção
         $retention_percentages = array();
+        
         if ($total_sessions > 0) {
             foreach ($retention_counts as $count) {
-                $retention_percentages[] = round(($count / $total_sessions) * 100, 1);
+                $retention_percentages[] = round(($count / $total_sessions) * 100);
             }
         }
         
+        // Formatar pontos de tempo como minutos:segundos para exibição
+        $formatted_time_points = array();
+        foreach ($time_points as $seconds) {
+            $formatted_time_points[] = $this->format_seconds($seconds);
+        }
+        
         return array(
-            'labels' => $time_points,
-            'values' => $retention_percentages
+            'labels' => $formatted_time_points,
+            'data' => $retention_percentages,
+            'timePoints' => $time_points, // Pontos de tempo brutos em segundos
+            'videoDuration' => $max_duration, // Duração total do vídeo
+            'formattedDuration' => $this->format_seconds($max_duration) // Duração formatada
         );
     }
     

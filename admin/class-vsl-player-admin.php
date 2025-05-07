@@ -616,6 +616,7 @@ class VSL_Player_Admin {
                     <!-- Gráfico de retenção -->
                     <h3 class="section-title"><?php echo esc_html__('Retenção de Audiência', 'vsl-player'); ?></h3>
                     <div class="chart-container">
+                        <div id="video-duration-info" class="vsl-video-info" style="display:none;margin-bottom:10px;padding:8px 12px;background:#f7f7f7;border-left:4px solid #617be5;font-size:14px;"></div>
                         <canvas id="retention-chart"></canvas>
                     </div>
                     
