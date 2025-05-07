@@ -10,6 +10,7 @@
     
     // Variáveis para armazenar os gráficos
     let retentionChart = null;
+    let devicesChart = null;
     
     // Inicialização
     $(document).ready(function() {
@@ -97,6 +98,12 @@
         
         // Renderizar gráfico de retenção
         renderRetentionChart(data.retention);
+        
+        // Renderizar gráfico de dispositivos
+        renderDevicesChart(data.devices);
+        
+        // Preencher tabela de origens
+        populateReferrersTable(data.referrers);
     }
     
     /**
@@ -106,6 +113,8 @@
         $('#total_views').text(data.summary.total_views || 0);
         $('#avg_watch_time').text(data.summary.avg_watch_time || '0s');
         $('#completion_rate').text((data.summary.completion_rate || 0) + '%');
+        $('#total_cta_clicks').text(data.cta_clicks || 0);
+        $('#play_rate').text((data.play_rate || 0) + '%');
     }
     
     /**
@@ -188,6 +197,105 @@
     function showNoData() {
         $('.vsl-analytics-charts').hide();
         $('.vsl-no-data').show();
+    }
+    
+    /**
+     * Renderiza o gráfico de dispositivos utilizados
+     */
+    function renderDevicesChart(devicesData) {
+        const ctx = document.getElementById('devices-chart').getContext('2d');
+        
+        // Destruir gráfico anterior se existir
+        if (devicesChart) {
+            devicesChart.destroy();
+        }
+        
+        // Verificar se há dados
+        if (!devicesData || !devicesData.labels || devicesData.labels.length === 0) {
+            return;
+        }
+        
+        // Formatar labels para exibição mais amigável
+        const formattedLabels = devicesData.labels.map(label => {
+            // Capitalizar primeira letra e substituir 'unknown' por 'Desconhecido'
+            if (label.toLowerCase() === 'unknown') {
+                return 'Desconhecido';
+            }
+            return label.charAt(0).toUpperCase() + label.slice(1);
+        });
+        
+        // Criar novo gráfico
+        devicesChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: formattedLabels,
+                datasets: [{
+                    data: devicesData.data,
+                    backgroundColor: devicesData.colors,
+                    borderColor: '#ffffff',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            padding: 20,
+                            boxWidth: 15,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.raw;
+                                const total = context.dataset.data.reduce((acc, val) => acc + val, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${context.label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    /**
+     * Preenche a tabela de origens de visualizações
+     */
+    function populateReferrersTable(referrersData) {
+        const $table = $('#referrers-table tbody');
+        $table.empty();
+        
+        // Verificar se há dados
+        if (!referrersData || referrersData.length === 0) {
+            $table.append(`<tr><td colspan="2">${vslAnalytics.i18n.noData}</td></tr>`);
+            return;
+        }
+        
+        // Preencher a tabela com os dados
+        $.each(referrersData, function(index, item) {
+            // Formatar URL para exibição
+            let displayUrl = item.url;
+            if (displayUrl === 'unknown') {
+                displayUrl = 'Desconhecido';
+            } else if (displayUrl.length > 60) {
+                // Truncar URLs muito longas
+                displayUrl = displayUrl.substring(0, 57) + '...';
+            }
+            
+            $table.append(`
+                <tr>
+                    <td title="${item.url}">${displayUrl}</td>
+                    <td class="count-column">${item.count}</td>
+                </tr>
+            `);
+        });
     }
     
 })(jQuery);

@@ -598,12 +598,53 @@ class VSL_Player_Admin {
                         <h3><?php echo esc_html__('Taxa de Conclusão', 'vsl-player'); ?></h3>
                         <div class="value" id="completion_rate">0%</div>
                     </div>
+                    
+                    <div class="vsl-analytics-card">
+                        <h3><?php echo esc_html__('Total de Cliques CTA', 'vsl-player'); ?></h3>
+                        <div class="value" id="total_cta_clicks">0</div>
+                    </div>
+                    
+                    <div class="vsl-analytics-card">
+                        <h3><?php echo esc_html__('Taxa de Cliques no Player', 'vsl-player'); ?></h3>
+                        <div class="value" id="play_rate">0%</div>
+                    </div>
                 </div>
                 
                 <!-- Área de gráficos -->
                 <div class="vsl-analytics-charts">
+                    <!-- Gráfico de retenção -->
+                    <h3 class="section-title"><?php echo esc_html__('Retenção de Audiência', 'vsl-player'); ?></h3>
                     <div class="chart-container">
                         <canvas id="retention-chart"></canvas>
+                    </div>
+                    
+                    <!-- Gráficos de dispositivos e origens -->
+                    <div class="charts-row">
+                        <div class="chart-column">
+                            <h3 class="section-title"><?php echo esc_html__('Dispositivos Utilizados', 'vsl-player'); ?></h3>
+                            <div class="chart-pie-container">
+                                <canvas id="devices-chart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-column">
+                            <h3 class="section-title"><?php echo esc_html__('Origens das Visualizações (Top 10)', 'vsl-player'); ?></h3>
+                            <div class="referrers-container">
+                                <table class="referrers-table" id="referrers-table">
+                                    <thead>
+                                        <tr>
+                                            <th><?php echo esc_html__('URL', 'vsl-player'); ?></th>
+                                            <th class="count-column"><?php echo esc_html__('Visualizações', 'vsl-player'); ?></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="2"><?php echo esc_html__('Carregando dados...', 'vsl-player'); ?></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 

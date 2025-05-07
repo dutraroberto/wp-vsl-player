@@ -66,11 +66,27 @@ class VSL_Analytics_Data {
         // Calcular métricas de resumo
         $summary = $this->calculate_summary_metrics($session_data, $video_id);
         
+        // Processar dados de dispositivos
+        $devices_data = $this->calculate_devices_data($session_data);
+        
+        // Processar dados de origens de visualização
+        $referrers_data = $this->calculate_referrers_data($session_data);
+        
+        // Calcular total de cliques em CTA
+        $cta_clicks = $this->calculate_cta_clicks($session_data);
+        
+        // Calcular taxa de cliques no player
+        $play_rate = $this->calculate_play_rate($session_data);
+        
         // Preparar resposta
         $response = array(
             'sessions' => $session_data,
             'summary' => $summary,
-            'retention' => $retention_data
+            'retention' => $retention_data,
+            'devices' => $devices_data,
+            'referrers' => $referrers_data,
+            'cta_clicks' => $cta_clicks,
+            'play_rate' => $play_rate
         );
         
         // Enviar resposta como JSON
@@ -227,6 +243,149 @@ class VSL_Analytics_Data {
             'labels' => $time_points,
             'values' => $retention_percentages
         );
+    }
+    
+    /**
+     * Calcula os dados de dispositivos para exibição em gráfico de pizza
+     * 
+     * @param array $sessions Dados das sessões
+     * @return array Dados de dispositivos formatados para Chart.js
+     */
+    private function calculate_devices_data($sessions) {
+        $devices = array();
+        
+        // Contar ocorrências de cada tipo de dispositivo
+        foreach ($sessions as $session) {
+            $device_type = !empty($session['device_type']) ? $session['device_type'] : 'unknown';
+            
+            if (!isset($devices[$device_type])) {
+                $devices[$device_type] = 0;
+            }
+            
+            $devices[$device_type]++;
+        }
+        
+        // Obter cores para o gráfico
+        $colors = $this->get_chart_colors(count($devices));
+        
+        // Formatar dados para Chart.js
+        $labels = array_keys($devices);
+        $data = array_values($devices);
+        
+        return array(
+            'labels' => $labels,
+            'data' => $data,
+            'colors' => $colors
+        );
+    }
+    
+    /**
+     * Calcula os dados de origens de visualização para exibição em tabela
+     * 
+     * @param array $sessions Dados das sessões
+     * @return array Dados de origens formatados
+     */
+    private function calculate_referrers_data($sessions) {
+        $referrers = array();
+        
+        // Contar ocorrências de cada URL de origem
+        foreach ($sessions as $session) {
+            $page_url = !empty($session['page_url']) ? $session['page_url'] : 'unknown';
+            
+            if (!isset($referrers[$page_url])) {
+                $referrers[$page_url] = 0;
+            }
+            
+            $referrers[$page_url]++;
+        }
+        
+        // Ordenar por contagem (maior para menor)
+        arsort($referrers);
+        
+        // Limitar para os top 10
+        $referrers = array_slice($referrers, 0, 10, true);
+        
+        // Formatar para exibição
+        $formatted_referrers = array();
+        foreach ($referrers as $url => $count) {
+            $formatted_referrers[] = array(
+                'url' => $url,
+                'count' => $count
+            );
+        }
+        
+        return $formatted_referrers;
+    }
+    
+    /**
+     * Calcula o total de cliques em CTA
+     * 
+     * @param array $sessions Dados das sessões
+     * @return int Total de cliques em CTA
+     */
+    private function calculate_cta_clicks($sessions) {
+        $total_clicks = 0;
+        
+        foreach ($sessions as $session) {
+            $total_clicks += intval($session['cta_clicks']);
+        }
+        
+        return $total_clicks;
+    }
+    
+    /**
+     * Calcula a taxa de cliques no player
+     * 
+     * @param array $sessions Dados das sessões
+     * @return float Taxa de cliques (porcentagem)
+     */
+    private function calculate_play_rate($sessions) {
+        $total_sessions = count($sessions);
+        $sessions_with_play = 0;
+        
+        foreach ($sessions as $session) {
+            if (!empty($session['first_play'])) {
+                $sessions_with_play++;
+            }
+        }
+        
+        $play_rate = $total_sessions > 0 ? round(($sessions_with_play / $total_sessions) * 100, 1) : 0;
+        
+        return $play_rate;
+    }
+    
+    /**
+     * Retorna um conjunto de cores para uso em gráficos
+     * 
+     * @param int $count Número de cores necessárias
+     * @return array Array de cores em formato hexadecimal
+     */
+    private function get_chart_colors($count) {
+        $base_colors = array(
+            '#0073aa', // Azul WordPress
+            '#d54e21', // Laranja WordPress
+            '#37c871', // Verde
+            '#f2a700', // Amarelo
+            '#e14d43', // Vermelho
+            '#826eb4', // Roxo
+            '#00b9eb', // Azul claro
+            '#f78b53', // Laranja claro
+            '#7ad03a', // Verde claro
+            '#ffba00', // Amarelo escuro
+        );
+        
+        // Se precisamos de mais cores do que temos no array base
+        if ($count > count($base_colors)) {
+            // Repetir as cores básicas
+            $extended_colors = array();
+            for ($i = 0; $i < $count; $i++) {
+                $extended_colors[] = $base_colors[$i % count($base_colors)];
+            }
+            return $extended_colors;
+        }
+        
+        // Caso contrário, retornar apenas as cores necessárias
+        return array_slice($base_colors, 0, $count);
     }
     
     /**
