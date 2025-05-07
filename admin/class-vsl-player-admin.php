@@ -97,6 +97,7 @@ class VSL_Player_Admin {
             'vsl-player_page_vsl-player-license',
             'vsl_player_page_vsl-player-license',
             'vsl_player_page_vsl-player-support',
+            'vsl_player_page_vsl-player-analytics',
             'edit-vsl_player',
             'vsl_player',
             'edit-vsl_reveal',
@@ -110,6 +111,54 @@ class VSL_Player_Admin {
         // Skip if not on our pages
         else if (!in_array($screen->id, $vsl_admin_pages) && strpos($hook, 'vsl-player') === false) {
             return;
+        }
+        
+        // Carregar scripts e estilos específicos para a página de analytics
+        if (isset($_GET['page']) && $_GET['page'] == 'vsl-player-analytics') {
+            // jQuery UI para datepicker
+            wp_enqueue_style('jquery-ui', 'https://code.jquery.com/ui/1.13.2/themes/smoothness/jquery-ui.css');
+            wp_enqueue_script('jquery-ui-datepicker');
+            
+            // Chart.js
+            wp_enqueue_script(
+                'chartjs',
+                'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js',
+                array(),
+                '3.9.1',
+                true
+            );
+            
+            // CSS específico para analytics
+            wp_enqueue_style(
+                'vsl-player-analytics-styles',
+                VSL_PLAYER_URL . 'admin/css/vsl-player-analytics.css',
+                array('vsl-player-admin-enhanced'),
+                VSL_PLAYER_VERSION,
+                'all'
+            );
+            
+            // JS específico para analytics
+            wp_enqueue_script(
+                'vsl-player-analytics',
+                VSL_PLAYER_URL . 'admin/js/vsl-player-analytics.js',
+                array('jquery', 'chartjs', 'jquery-ui-datepicker'),
+                VSL_PLAYER_VERSION,
+                true
+            );
+            
+            // Localize script para analytics
+            wp_localize_script(
+                'vsl-player-analytics',
+                'vslAnalytics',
+                array(
+                    'ajax_url' => admin_url('admin-ajax.php'),
+                    'nonce' => wp_create_nonce('vsl_analytics_nonce'),
+                    'i18n' => array(
+                        'noData' => __('Nenhum dado disponível para exibição', 'vsl-player'),
+                        'loading' => __('Carregando...', 'vsl-player')
+                    )
+                )
+            );
         }
         
         // Admin CSS (original)
@@ -485,15 +534,82 @@ class VSL_Player_Admin {
      * Display the analytics page content.
      */
     public function display_analytics_page() {
+        // Obter todos os vídeos (VSL Players) para o filtro
+        $vsl_players = get_posts([
+            'post_type' => 'vsl_player',
+            'posts_per_page' => -1,
+            'orderby' => 'title',
+            'order' => 'ASC'
+        ]);
         ?>
         <div class="wrap vsl-player-admin">
             <h1><?php echo esc_html__('VSL Player Otimizado - Analytics', 'vsl-player'); ?></h1>
             
             <div class="vsl-analytics-container">
-                <!-- O conteúdo real da página será adicionado posteriormente -->
-                <div class="analytics-placeholder">
-                    <span class="dashicons dashicons-chart-bar"></span>
-                    <p><?php echo esc_html__('Em breve: Estatísticas e análises de desempenho para seus VSLs.', 'vsl-player'); ?></p>
+                <!-- Filtros -->
+                <div class="vsl-analytics-filters">
+                    <div class="vsl-analytics-filter-group">
+                        <label for="video_filter"><?php echo esc_html__('Selecione o Vídeo:', 'vsl-player'); ?></label>
+                        <select id="video_filter" name="video_filter">
+                            <option value=""><?php echo esc_html__('Todos os Vídeos', 'vsl-player'); ?></option>
+                            <?php foreach ($vsl_players as $player): ?>
+                                <option value="<?php echo esc_attr($player->ID); ?>">
+                                    <?php echo esc_html($player->post_title); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="vsl-analytics-filter-group">
+                        <label for="date_start"><?php echo esc_html__('Data Inicial:', 'vsl-player'); ?></label>
+                        <input type="text" id="date_start" name="date_start" class="vsl-datepicker" placeholder="AAAA-MM-DD">
+                    </div>
+                    
+                    <div class="vsl-analytics-filter-group">
+                        <label for="date_end"><?php echo esc_html__('Data Final:', 'vsl-player'); ?></label>
+                        <input type="text" id="date_end" name="date_end" class="vsl-datepicker" placeholder="AAAA-MM-DD">
+                    </div>
+                    
+                    <button type="button" id="apply_filters" class="apply-filters-button">
+                        <span class="dashicons dashicons-filter"></span> 
+                        <?php echo esc_html__('Aplicar Filtros', 'vsl-player'); ?>
+                    </button>
+                </div>
+                
+                <!-- Indicador de carregamento -->
+                <div class="vsl-analytics-loading">
+                    <span class="spinner is-active"></span>
+                    <p><?php echo esc_html__('Carregando dados...', 'vsl-player'); ?></p>
+                </div>
+                
+                <!-- Cards de resumo -->
+                <div class="vsl-analytics-summary">
+                    <div class="vsl-analytics-card">
+                        <h3><?php echo esc_html__('Total de Visualizações', 'vsl-player'); ?></h3>
+                        <div class="value" id="total_views">0</div>
+                    </div>
+                    
+                    <div class="vsl-analytics-card">
+                        <h3><?php echo esc_html__('Tempo Médio de Visualização', 'vsl-player'); ?></h3>
+                        <div class="value" id="avg_watch_time">0s</div>
+                    </div>
+                    
+                    <div class="vsl-analytics-card">
+                        <h3><?php echo esc_html__('Taxa de Conclusão', 'vsl-player'); ?></h3>
+                        <div class="value" id="completion_rate">0%</div>
+                    </div>
+                </div>
+                
+                <!-- Área de gráficos -->
+                <div class="vsl-analytics-charts">
+                    <div class="chart-container">
+                        <canvas id="retention-chart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Mensagem de nenhum dado -->
+                <div class="vsl-no-data" style="display: none;">
+                    <p><?php echo esc_html__('Nenhum dado disponível para os filtros selecionados.', 'vsl-player'); ?></p>
                 </div>
             </div>
         </div>

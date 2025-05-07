@@ -36,6 +36,7 @@ class VSL_Player {
         require_once VSL_PLAYER_DIR . 'includes/class-vsl-analytics-installer.php';
         require_once VSL_PLAYER_DIR . 'includes/class-vsl-analytics-rest.php';
         require_once VSL_PLAYER_DIR . 'includes/class-vsl-analytics.php';
+        require_once VSL_PLAYER_DIR . 'includes/class-vsl-analytics-data.php';
     }
 
     /**
