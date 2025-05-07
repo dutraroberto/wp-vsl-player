@@ -36,6 +36,11 @@ class VSL_Analytics_Data {
         $date_start = isset($filters['date_start']) && !empty($filters['date_start']) ? sanitize_text_field($filters['date_start']) : date('Y-m-d', strtotime('-30 days'));
         $date_end = isset($filters['date_end']) && !empty($filters['date_end']) ? sanitize_text_field($filters['date_end']) : date('Y-m-d');
         
+        // Opções de visualização e filtros
+        $group_urls = isset($filters['group_urls']) ? (bool)$filters['group_urls'] : false;
+        $utm_source_filter = isset($filters['utm_source']) ? sanitize_text_field($filters['utm_source']) : '';
+        $utm_campaign_filter = isset($filters['utm_campaign']) ? sanitize_text_field($filters['utm_campaign']) : '';
+        
         // Garantir que as datas estão no formato correto (YYYY-MM-DD)
         $date_start = date('Y-m-d', strtotime($date_start));
         $date_end = date('Y-m-d', strtotime($date_end . ' +1 day')); // +1 dia para incluir o último dia na consulta
@@ -69,14 +74,17 @@ class VSL_Analytics_Data {
         // Processar dados de dispositivos
         $devices_data = $this->calculate_devices_data($session_data);
         
-        // Processar dados de origens de visualização
-        $referrers_data = $this->calculate_referrers_data($session_data);
+        // Processar dados de origens de visualização (com opção de agrupar URLs)
+        $referrers_data = $this->calculate_referrers_data($session_data, $group_urls);
         
         // Calcular total de cliques em CTA
         $cta_clicks = $this->calculate_cta_clicks($session_data);
         
         // Calcular taxa de cliques no player
         $play_rate = $this->calculate_play_rate($session_data);
+        
+        // Processar dados de campanhas UTM
+        $utm_data = $this->calculate_utm_campaigns($session_data, $utm_source_filter, $utm_campaign_filter);
         
         // Preparar resposta
         $response = array(
@@ -86,7 +94,13 @@ class VSL_Analytics_Data {
             'devices' => $devices_data,
             'referrers' => $referrers_data,
             'cta_clicks' => $cta_clicks,
-            'play_rate' => $play_rate
+            'play_rate' => $play_rate,
+            'utm_data' => $utm_data,
+            'filters' => array(
+                'group_urls' => $group_urls,
+                'utm_source' => $utm_source_filter,
+                'utm_campaign' => $utm_campaign_filter
+            )
         );
         
         // Enviar resposta como JSON
@@ -283,14 +297,25 @@ class VSL_Analytics_Data {
      * Calcula os dados de origens de visualização para exibição em tabela
      * 
      * @param array $sessions Dados das sessões
+     * @param bool $group_urls Se verdadeiro, agrupa URLs sem parâmetros
      * @return array Dados de origens formatados
      */
-    private function calculate_referrers_data($sessions) {
+    private function calculate_referrers_data($sessions, $group_urls = false) {
         $referrers = array();
         
         // Contar ocorrências de cada URL de origem
         foreach ($sessions as $session) {
             $page_url = !empty($session['page_url']) ? $session['page_url'] : 'unknown';
+            
+            // Se a opção de agrupar URLs está ativada, limpar os parâmetros
+            if ($group_urls && $page_url !== 'unknown') {
+                $clean_url = parse_url($page_url, PHP_URL_PATH);
+                // Se não conseguiu obter o caminho, usar a URL original
+                if (empty($clean_url)) {
+                    $clean_url = $page_url;
+                }
+                $page_url = $clean_url;
+            }
             
             if (!isset($referrers[$page_url])) {
                 $referrers[$page_url] = 0;
@@ -310,7 +335,8 @@ class VSL_Analytics_Data {
         foreach ($referrers as $url => $count) {
             $formatted_referrers[] = array(
                 'url' => $url,
-                'count' => $count
+                'count' => $count,
+                'is_clean' => $group_urls
             );
         }
         
@@ -352,6 +378,83 @@ class VSL_Analytics_Data {
         $play_rate = $total_sessions > 0 ? round(($sessions_with_play / $total_sessions) * 100, 1) : 0;
         
         return $play_rate;
+    }
+    
+    /**
+     * Analisa os dados de campanhas UTM e gera relatório
+     * 
+     * @param array $sessions Dados das sessões
+     * @param string $utm_source_filter Filtro opcional para utm_source
+     * @param string $utm_campaign_filter Filtro opcional para utm_campaign
+     * @return array Dados de campanhas formatados
+     */
+    private function calculate_utm_campaigns($sessions, $utm_source_filter = '', $utm_campaign_filter = '') {
+        $campaigns = array();
+        $utm_sources = array('');  // Inclui uma opção vazia para "Todos"
+        $utm_campaigns = array(''); // Inclui uma opção vazia para "Todos"
+        
+        // Primeiro passo: identificar todas as fontes e campanhas disponíveis e agrupar dados
+        foreach ($sessions as $session) {
+            $utm_source = !empty($session['utm_source']) ? $session['utm_source'] : '-';
+            $utm_medium = !empty($session['utm_medium']) ? $session['utm_medium'] : '-';
+            $utm_campaign = !empty($session['utm_campaign']) ? $session['utm_campaign'] : '-';
+            
+            // Adicionar à lista de filtros disponíveis se ainda não estiver lá
+            if (!in_array($utm_source, $utm_sources) && $utm_source !== '-') {
+                $utm_sources[] = $utm_source;
+            }
+            
+            if (!in_array($utm_campaign, $utm_campaigns) && $utm_campaign !== '-') {
+                $utm_campaigns[] = $utm_campaign;
+            }
+            
+            // Criar chave única para esta combinação de UTMs
+            $key = $utm_source . '|' . $utm_medium . '|' . $utm_campaign;
+            
+            // Aplicar filtros se especificados
+            if ((!empty($utm_source_filter) && $utm_source !== $utm_source_filter) ||
+                (!empty($utm_campaign_filter) && $utm_campaign !== $utm_campaign_filter)) {
+                continue; // Pular esta sessão se não corresponder aos filtros
+            }
+            
+            // Inicializar ou incrementar contador para esta combinação
+            if (!isset($campaigns[$key])) {
+                $campaigns[$key] = array(
+                    'utm_source' => $utm_source,
+                    'utm_medium' => $utm_medium,
+                    'utm_campaign' => $utm_campaign,
+                    'sessions' => 0,
+                    'plays' => 0 // Para calcular taxa de clique
+                );
+            }
+            
+            $campaigns[$key]['sessions']++;
+            
+            // Contar quantas sessões tiveram um play
+            if (!empty($session['first_play'])) {
+                $campaigns[$key]['plays']++;
+            }
+        }
+        
+        // Calcular a taxa de clique e outros dados para cada campanha
+        foreach ($campaigns as $key => &$campaign) {
+            $campaign['click_rate'] = $campaign['sessions'] > 0 ? 
+                round(($campaign['plays'] / $campaign['sessions']) * 100, 1) : 0;
+        }
+        
+        // Ordenar por número de sessões (maior para menor)
+        uasort($campaigns, function($a, $b) {
+            return $b['sessions'] - $a['sessions'];
+        });
+        
+        // Formatar para exibição
+        $formatted_campaigns = array_values($campaigns);
+        
+        return array(
+            'campaigns' => $formatted_campaigns,
+            'utm_sources' => $utm_sources,
+            'utm_campaigns' => $utm_campaigns
+        );
     }
     
     /**

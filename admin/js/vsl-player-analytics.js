@@ -32,8 +32,19 @@
             $('#date_end').datepicker('setDate', new Date());
         }
         
-        // Botão de aplicar filtros
+        // Botão de aplicar filtros principais
         $('#apply_filters').on('click', function() {
+            loadAnalyticsData();
+        });
+        
+        // Toggle de agrupamento de URLs
+        $('#group_urls').on('change', function() {
+            // Recarregar dados quando o toggle mudar
+            loadAnalyticsData();
+        });
+        
+        // Botão de aplicar filtros UTM
+        $('#apply_utm_filters').on('click', function() {
             loadAnalyticsData();
         });
         
@@ -48,7 +59,11 @@
         const filters = {
             video_id: $('#video_filter').val(),
             date_start: $('#date_start').val(),
-            date_end: $('#date_end').val()
+            date_end: $('#date_end').val(),
+            // Novas opções
+            group_urls: $('#group_urls').is(':checked'),
+            utm_source: $('#utm_source_filter').val(),
+            utm_campaign: $('#utm_campaign_filter').val()
         };
         
         // Mostrar indicador de carregamento
@@ -102,8 +117,17 @@
         // Renderizar gráfico de dispositivos
         renderDevicesChart(data.devices);
         
+        // Atualizar estado do toggle de agrupamento de URLs
+        $('#group_urls').prop('checked', data.filters.group_urls);
+        
         // Preencher tabela de origens
-        populateReferrersTable(data.referrers);
+        populateReferrersTable(data.referrers, data.filters.group_urls);
+        
+        // Atualizar filtros de UTM
+        updateUtmFilters(data.utm_data);
+        
+        // Preencher tabela de campanhas UTM
+        populateUtmCampaignsTable(data.utm_data.campaigns);
     }
     
     /**
@@ -268,7 +292,7 @@
     /**
      * Preenche a tabela de origens de visualizações
      */
-    function populateReferrersTable(referrersData) {
+    function populateReferrersTable(referrersData, isGrouped) {
         const $table = $('#referrers-table tbody');
         $table.empty();
         
@@ -282,17 +306,91 @@
         $.each(referrersData, function(index, item) {
             // Formatar URL para exibição
             let displayUrl = item.url;
-            if (displayUrl === 'unknown') {
+            if (displayUrl === 'unknown' || displayUrl === '-') {
                 displayUrl = 'Desconhecido';
             } else if (displayUrl.length > 60) {
                 // Truncar URLs muito longas
                 displayUrl = displayUrl.substring(0, 57) + '...';
             }
             
+            // Adicionar indicador de URL agrupada quando aplicável
+            const urlTitle = isGrouped && displayUrl !== 'Desconhecido' ? 'URL agrupada (sem parâmetros)' : item.url;
+            
             $table.append(`
                 <tr>
-                    <td title="${item.url}">${displayUrl}</td>
+                    <td title="${urlTitle}">${displayUrl}</td>
                     <td class="count-column">${item.count}</td>
+                </tr>
+            `);
+        });
+    }
+    
+    /**
+     * Atualiza os dropdowns de filtros UTM com as opções disponíveis
+     */
+    function updateUtmFilters(utmData) {
+        if (!utmData) return;
+        
+        // Atualizar dropdown de utm_source
+        const $sourceFilter = $('#utm_source_filter');
+        const currentSourceValue = $sourceFilter.val(); // Preservar seleção atual
+        $sourceFilter.find('option:not(:first)').remove(); // Remover todas as opções exceto a primeira
+        
+        // Adicionar novas opções
+        $.each(utmData.utm_sources, function(index, source) {
+            if (source === '') return; // Pular a opção vazia (já existe)
+            $sourceFilter.append(`<option value="${source}">${source}</option>`);
+        });
+        
+        // Restaurar a seleção anterior, se existir
+        if (currentSourceValue) {
+            $sourceFilter.val(currentSourceValue);
+        }
+        
+        // Atualizar dropdown de utm_campaign
+        const $campaignFilter = $('#utm_campaign_filter');
+        const currentCampaignValue = $campaignFilter.val(); // Preservar seleção atual
+        $campaignFilter.find('option:not(:first)').remove(); // Remover todas as opções exceto a primeira
+        
+        // Adicionar novas opções
+        $.each(utmData.utm_campaigns, function(index, campaign) {
+            if (campaign === '') return; // Pular a opção vazia (já existe)
+            $campaignFilter.append(`<option value="${campaign}">${campaign}</option>`);
+        });
+        
+        // Restaurar a seleção anterior, se existir
+        if (currentCampaignValue) {
+            $campaignFilter.val(currentCampaignValue);
+        }
+    }
+    
+    /**
+     * Preenche a tabela de campanhas UTM
+     */
+    function populateUtmCampaignsTable(campaignsData) {
+        const $table = $('#utm-campaigns-table tbody');
+        $table.empty();
+        
+        // Verificar se há dados
+        if (!campaignsData || campaignsData.length === 0) {
+            $table.append(`<tr><td colspan="5">${vslAnalytics.i18n.noData}</td></tr>`);
+            return;
+        }
+        
+        // Preencher a tabela com os dados
+        $.each(campaignsData, function(index, campaign) {
+            // Formatar para exibição
+            const source = campaign.utm_source === '-' ? 'Não definido' : campaign.utm_source;
+            const medium = campaign.utm_medium === '-' ? 'Não definido' : campaign.utm_medium;
+            const campaignName = campaign.utm_campaign === '-' ? 'Não definido' : campaign.utm_campaign;
+            
+            $table.append(`
+                <tr>
+                    <td>${source}</td>
+                    <td>${medium}</td>
+                    <td>${campaignName}</td>
+                    <td class="num-column">${campaign.sessions}</td>
+                    <td class="num-column">${campaign.click_rate}%</td>
                 </tr>
             `);
         });

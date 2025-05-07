@@ -628,7 +628,16 @@ class VSL_Player_Admin {
                         </div>
                         
                         <div class="chart-column">
-                            <h3 class="section-title"><?php echo esc_html__('Origens das Visualizações (Top 10)', 'vsl-player'); ?></h3>
+                            <div class="referrers-options">
+                                <h3 class="section-title"><?php echo esc_html__('Origens das Visualizações (Top 10)', 'vsl-player'); ?></h3>
+                                <div class="url-grouping-toggle">
+                                    <label for="group_urls"><?php echo esc_html__('Agrupar URLs sem parâmetros', 'vsl-player'); ?></label>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="group_urls" name="group_urls">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
                             <div class="referrers-container">
                                 <table class="referrers-table" id="referrers-table">
                                     <thead>
@@ -645,6 +654,51 @@ class VSL_Player_Admin {
                                 </table>
                             </div>
                         </div>
+                    </div>
+                    
+                    <!-- Análise de Campanhas UTM -->
+                    <h3 class="section-title"><?php echo esc_html__('Campanhas de Marketing (UTM)', 'vsl-player'); ?></h3>
+                    
+                    <div class="utm-filters">
+                        <div class="utm-filter-group">
+                            <label for="utm_source_filter"><?php echo esc_html__('Fonte (utm_source)', 'vsl-player'); ?></label>
+                            <select id="utm_source_filter" name="utm_source_filter">
+                                <option value=""><?php echo esc_html__('Todas as fontes', 'vsl-player'); ?></option>
+                                <!-- Opções serão preenchidas via JavaScript -->
+                            </select>
+                        </div>
+                        
+                        <div class="utm-filter-group">
+                            <label for="utm_campaign_filter"><?php echo esc_html__('Campanha (utm_campaign)', 'vsl-player'); ?></label>
+                            <select id="utm_campaign_filter" name="utm_campaign_filter">
+                                <option value=""><?php echo esc_html__('Todas as campanhas', 'vsl-player'); ?></option>
+                                <!-- Opções serão preenchidas via JavaScript -->
+                            </select>
+                        </div>
+                        
+                        <button type="button" id="apply_utm_filters" class="apply-utm-filters">
+                            <span class="dashicons dashicons-filter"></span> 
+                            <?php echo esc_html__('Aplicar Filtros UTM', 'vsl-player'); ?>
+                        </button>
+                    </div>
+                    
+                    <div class="utm-table-container">
+                        <table class="utm-campaigns-table" id="utm-campaigns-table">
+                            <thead>
+                                <tr>
+                                    <th><?php echo esc_html__('Fonte (utm_source)', 'vsl-player'); ?></th>
+                                    <th><?php echo esc_html__('Mídia (utm_medium)', 'vsl-player'); ?></th>
+                                    <th><?php echo esc_html__('Campanha (utm_campaign)', 'vsl-player'); ?></th>
+                                    <th class="num-column"><?php echo esc_html__('Sessões', 'vsl-player'); ?></th>
+                                    <th class="num-column"><?php echo esc_html__('Taxa de Clique', 'vsl-player'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="5"><?php echo esc_html__('Carregando dados...', 'vsl-player'); ?></td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
                 
