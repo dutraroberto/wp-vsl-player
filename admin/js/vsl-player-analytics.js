@@ -14,6 +14,27 @@
     
     // Inicialização
     $(document).ready(function() {
+        // Inicializar controle deslizante de densidade de pontos
+        $('#retention-density-slider').on('input', function() {
+            const value = $(this).val();
+            
+            // Verificar se está na posição 0 (padrão)
+            if (value == 0) {
+                $('#retention-density-value').text('1 ponto/5s');
+            } else {
+                $('#retention-density-value').text(value);
+            }
+            
+            // Se já tivermos dados carregados e um gráfico, podemos atualizar
+            if ($('#video_filter').val()) {
+                // Recarregar dados apenas se o slider parar por 1000ms
+                clearTimeout($(this).data('timeout'));
+                $(this).data('timeout', setTimeout(function() {
+                    loadAnalyticsData();
+                }, 1000));
+            }
+        });
+        
         // Inicializar datepicker com design melhorado e formato brasileiro
         $('.vsl-datepicker').datepicker({
             dateFormat: 'dd/mm/yy', // Formato brasileiro dd/mm/aaaa
@@ -167,6 +188,7 @@
             date_start: convertDateFormat(dateStart),
             date_end: convertDateFormat(dateEnd),
             group_urls: groupUrls,
+            retention_density: $('#retention-density-slider').val(), // Adicionar densidade de pontos
             utm_source: $('#utm_source_filter').val(),
             utm_campaign: $('#utm_campaign_filter').val()
         };
@@ -219,7 +241,7 @@
         updateSummaryCards(data);
         
         // Renderizar gráfico de retenção
-        renderRetentionChart(data.retention);
+        updateRetentionChart(data.retention);
         
         // Renderizar gráfico de dispositivos
         renderDevicesChart(data.devices);
@@ -284,12 +306,16 @@
     }
     
     /**
-     * Renderiza o gráfico de retenção de audiência usando a duração real do vídeo
+     * Atualiza o gráfico de retenção
      */
-    function renderRetentionChart(retentionData) {
+    function updateRetentionChart(retentionData) {
         const ctx = document.getElementById('retention-chart').getContext('2d');
         
-        // Destruir gráfico anterior se existir
+        // Atualizar informação de densidade do gráfico
+        const pointDensity = $('#retention-density-slider').val();
+        console.log('Usando densidade de pontos:', pointDensity);
+        
+        // Destruir gráfico existente se houver
         if (retentionChart) {
             retentionChart.destroy();
         }

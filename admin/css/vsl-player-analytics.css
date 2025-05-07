@@ -350,22 +350,58 @@
     margin-top: 30px;
     margin-bottom: 15px;
     padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
-    color: #23282d;
-    font-size: 16px;
 }
 
 /* Estilos para as novas funcionalidades */
+.retention-controls {
+display: flex;
+flex-direction: column;
+align-items: flex-end;
+gap: 10px;
+}
+
+.retention-density-control {
+display: flex;
+align-items: center;
+gap: 10px;
+background-color: #f0f0f1;
+padding: 5px 10px;
+border-radius: 4px;
+font-size: 12px;
+}
+
+.retention-density-control label {
+font-weight: 500;
+white-space: nowrap;
+}
+
+.retention-density-control input[type="range"] {
+width: 120px;
+margin: 0;
+}
+
+#retention-density-value {
+font-weight: bold;
+min-width: 30px;
+text-align: center;
+color: var(--vsl-primary);
+}
+
 .referrers-options {
-    display: flex;
-    align-items: center;
-    margin-bottom: 15px;
+display: flex;
+align-items: center;
+margin-bottom: 15px;
 }
 
 .url-grouping-toggle {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
+margin-left: auto;
+display: flex;
+align-items: center;
+background: var(--vsl-secondary);
+padding: 8px 15px;
+border-radius: 20px;
+font-size: 13px;
+box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     background: var(--vsl-secondary);
     padding: 8px 15px;
     border-radius: 20px;

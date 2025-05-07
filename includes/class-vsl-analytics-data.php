@@ -39,6 +39,11 @@ class VSL_Analytics_Data {
         // Opções de visualização e filtros
         // Converter explicitamente para booleano e garantir que seja true ou false
         $group_urls = false;
+        $retention_density = isset($filters['retention_density']) ? intval($filters['retention_density']) : 50;
+        
+        // Limitando valores de densidade para evitar problemas de desempenho
+        $retention_density = max(25, min(500, $retention_density));
+        
         if (isset($filters['group_urls'])) {
             // Tratar diferentes tipos de entrada como "true"
             $group_urls_value = $filters['group_urls'];
@@ -74,7 +79,7 @@ class VSL_Analytics_Data {
         }
         
         // Processar dados de retenção
-        $retention_data = $this->calculate_retention_data($session_data, $video_id);
+        $retention_data = $this->calculate_retention_data($session_data, $video_id, $retention_density);
         
         // Calcular métricas de resumo
         $summary = $this->calculate_summary_metrics($session_data, $video_id);
@@ -223,9 +228,10 @@ class VSL_Analytics_Data {
      * 
      * @param array $sessions Dados das sessões com duração do vídeo
      * @param int $video_id ID do vídeo
+     * @param int $retention_density Número de pontos desejados no gráfico de retenção
      * @return array Dados de retenção formatados para Chart.js
      */
-    private function calculate_retention_data($sessions, $video_id) {
+    private function calculate_retention_data($sessions, $video_id, $retention_density = 50) {
         // Determinar a duração máxima do vídeo
         $max_duration = 0;
         
@@ -246,9 +252,14 @@ class VSL_Analytics_Data {
             }
         }
         
-        // Determinar os intervalos para o gráfico de retenção
-        // Queremos cerca de 20-30 pontos no gráfico para não ficar muito carregado
-        $interval = max(5, ceil($max_duration / 25)); // No mínimo 5 segundos
+        // Determinar o intervalo entre pontos
+        if ($retention_density > 0) {
+            // Calcular com base na densidade de pontos escolhida pelo usuário
+            $interval = max(1, ceil($max_duration / $retention_density));
+        } else {
+            // Valor padrão: 1 ponto a cada 5 segundos
+            $interval = 5; // Exatamente 5 segundos entre pontos
+        }
         
         // Criar pontos de tempo para o gráfico
         $time_points = range(0, $max_duration, $interval);
