@@ -206,6 +206,8 @@
      */
     function updateAnalyticsView(data) {
         if (!data.sessions || data.sessions.length === 0) {
+            // Zerar todas as métricas quando não há dados
+            resetAllMetrics();
             showNoData();
             return;
         }
@@ -236,6 +238,37 @@
         
         // Preencher tabela de campanhas UTM
         populateUtmCampaignsTable(data.utm_data.campaigns);
+    }
+    
+    /**
+     * Reseta todas as métricas para zero quando não há dados
+     */
+    function resetAllMetrics() {
+        // Resetar cards de resumo
+        $('#total_views').text('0');
+        $('#iframe_views').text('0');
+        $('#avg_watch_time').text('0s');
+        $('#completion_rate').text('0%');
+        $('#total_cta_clicks').text('0');
+        $('#play_rate').text('0%');
+        
+        // Limpar gráficos
+        if (retentionChart) {
+            retentionChart.destroy();
+            retentionChart = null;
+        }
+        
+        if (devicesChart) {
+            devicesChart.destroy();
+            devicesChart = null;
+        }
+        
+        // Limpar tabelas
+        $('#referrers-table tbody').empty();
+        $('#utm-campaigns-table tbody').empty();
+        
+        // Esconder informações de duração do vídeo
+        $('#video-duration-info').hide();
     }
     
     /**
