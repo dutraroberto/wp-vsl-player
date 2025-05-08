@@ -39,11 +39,6 @@ class VSL_Analytics_Data {
         // Opções de visualização e filtros
         // Converter explicitamente para booleano e garantir que seja true ou false
         $group_urls = false;
-        $retention_density = isset($filters['retention_density']) ? intval($filters['retention_density']) : 50;
-        
-        // Limitando valores de densidade para evitar problemas de desempenho
-        $retention_density = max(25, min(500, $retention_density));
-        
         if (isset($filters['group_urls'])) {
             // Tratar diferentes tipos de entrada como "true"
             $group_urls_value = $filters['group_urls'];
@@ -79,7 +74,7 @@ class VSL_Analytics_Data {
         }
         
         // Processar dados de retenção
-        $retention_data = $this->calculate_retention_data($session_data, $video_id, $retention_density);
+        $retention_data = $this->calculate_retention_data($session_data, $video_id);
         
         // Calcular métricas de resumo
         $summary = $this->calculate_summary_metrics($session_data, $video_id);
@@ -228,10 +223,9 @@ class VSL_Analytics_Data {
      * 
      * @param array $sessions Dados das sessões com duração do vídeo
      * @param int $video_id ID do vídeo
-     * @param int $retention_density Número de pontos desejados no gráfico de retenção
      * @return array Dados de retenção formatados para Chart.js
      */
-    private function calculate_retention_data($sessions, $video_id, $retention_density = 50) {
+    private function calculate_retention_data($sessions, $video_id) {
         // Determinar a duração máxima do vídeo
         $max_duration = 0;
         
@@ -252,14 +246,10 @@ class VSL_Analytics_Data {
             }
         }
         
-        // Determinar o intervalo entre pontos
-        if ($retention_density > 0) {
-            // Calcular com base na densidade de pontos escolhida pelo usuário
-            $interval = max(1, ceil($max_duration / $retention_density));
-        } else {
-            // Valor padrão: 1 ponto a cada 5 segundos
-            $interval = 5; // Exatamente 5 segundos entre pontos
-        }
+        // Determinar os intervalos para o gráfico de retenção
+        // O intervalo padrão agora será baseado no número de pontos desejados
+        // O valor será sobrescrito pelo front-end via JavaScript
+        $interval = max(5, ceil($max_duration / 10)); // Valor padrão: divisão por 10
         
         // Criar pontos de tempo para o gráfico
         $time_points = range(0, $max_duration, $interval);
@@ -300,13 +290,17 @@ class VSL_Analytics_Data {
             $formatted_time_points[] = $this->format_seconds($seconds);
         }
         
+        // Retornar dados formatados para o frontend com informações brutas para recalcular os pontos
         return array(
             'labels' => $formatted_time_points,
             'data' => $retention_percentages,
             'timePoints' => $time_points, // Pontos de tempo brutos em segundos
             'videoDuration' => $max_duration, // Duração total do vídeo
             'formattedDuration' => $this->format_seconds($max_duration), // Duração formatada
-            'viewerCounts' => $viewer_counts // Número absoluto de espectadores em cada ponto
+            'viewerCounts' => $viewer_counts, // Número absoluto de espectadores em cada ponto
+            'rawData' => true, // Indicador de que temos dados brutos para recalcular pontos
+            'sessions' => count($sessions), // Número total de sessões para cálculos percentuais
+            'interval' => $interval // Intervalo utilizado originalmente
         );
     }
     

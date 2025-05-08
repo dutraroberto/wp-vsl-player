@@ -662,13 +662,10 @@ class VSL_Player_Admin {
                     <div class="chart-main-container">
                         <div class="chart-header">
                             <h3 class="section-title"><?php echo esc_html__('Retenção de Audiência', 'vsl-player'); ?></h3>
-                            <div class="retention-controls">
-                                <div id="video-duration-info" class="vsl-video-info"></div>
-                                <div class="retention-density-control">
-                                    <label for="retention-density-slider"><?php echo esc_html__('Densidade de pontos:', 'vsl-player'); ?></label>
-                                    <input type="range" id="retention-density-slider" name="retention-density" min="25" max="500" value="0" step="25">
-                                    <span id="retention-density-value">1 ponto/5s</span>
-                                </div>
+                            <div class="retention-chart-controls">
+                                <label for="interval-slider"><?php echo esc_html__('Intervalo entre pontos:', 'vsl-player'); ?> <span id="interval-value">10</span> <?php echo esc_html__('segundos', 'vsl-player'); ?></label>
+                                <input type="range" id="interval-slider" class="interval-slider" min="3" max="60" step="3" value="10">
+                                <button id="apply-interval" class="button button-small"><?php echo esc_html__('Aplicar', 'vsl-player'); ?></button>
                             </div>
                         </div>
                         <div class="chart-container">

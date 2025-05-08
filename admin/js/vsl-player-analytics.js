@@ -12,29 +12,12 @@
     let retentionChart = null;
     let devicesChart = null;
     
+    // Armazenar dados de retenção globalmente para recalcular pontos
+    let globalRetentionData = null;
+    let selectedIntervalSeconds = 10; // Valor padrão do intervalo em segundos
+    
     // Inicialização
     $(document).ready(function() {
-        // Inicializar controle deslizante de densidade de pontos
-        $('#retention-density-slider').on('input', function() {
-            const value = $(this).val();
-            
-            // Verificar se está na posição 0 (padrão)
-            if (value == 0) {
-                $('#retention-density-value').text('1 ponto/5s');
-            } else {
-                $('#retention-density-value').text(value);
-            }
-            
-            // Se já tivermos dados carregados e um gráfico, podemos atualizar
-            if ($('#video_filter').val()) {
-                // Recarregar dados apenas se o slider parar por 1000ms
-                clearTimeout($(this).data('timeout'));
-                $(this).data('timeout', setTimeout(function() {
-                    loadAnalyticsData();
-                }, 1000));
-            }
-        });
-        
         // Inicializar datepicker com design melhorado e formato brasileiro
         $('.vsl-datepicker').datepicker({
             dateFormat: 'dd/mm/yy', // Formato brasileiro dd/mm/aaaa
@@ -47,6 +30,24 @@
             dayNamesMin: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
             monthNamesShort: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
             firstDay: 0
+        });
+        
+        // Inicializar o controle deslizante de intervalo
+        $('#interval-slider').on('input', function() {
+            const value = $(this).val();
+            $('#interval-value').text(value);
+            selectedIntervalSeconds = parseInt(value);
+        });
+        
+        // Botão para aplicar o novo intervalo
+        $('#apply-interval').on('click', function() {
+            console.log('Botão Aplicar clicado, intervalo selecionado:', selectedIntervalSeconds);
+            if (globalRetentionData) {
+                console.log('Aplicando novo intervalo aos dados globais');
+                renderRetentionChart(globalRetentionData, selectedIntervalSeconds);
+            } else {
+                console.log('Erro: Nenhum dado de retenção disponível para recalcular');
+            }
         });
         
         // Definir data inicial como 30 dias atrás por padrão
@@ -188,7 +189,6 @@
             date_start: convertDateFormat(dateStart),
             date_end: convertDateFormat(dateEnd),
             group_urls: groupUrls,
-            retention_density: $('#retention-density-slider').val(), // Adicionar densidade de pontos
             utm_source: $('#utm_source_filter').val(),
             utm_campaign: $('#utm_campaign_filter').val()
         };
@@ -227,6 +227,8 @@
      * Atualiza a visualização com os dados de analytics
      */
     function updateAnalyticsView(data) {
+        console.log('Dados recebidos do servidor:', data);
+        
         if (!data.sessions || data.sessions.length === 0) {
             // Zerar todas as métricas quando não há dados
             resetAllMetrics();
@@ -241,7 +243,7 @@
         updateSummaryCards(data);
         
         // Renderizar gráfico de retenção
-        updateRetentionChart(data.retention);
+        renderRetentionChart(data.retention);
         
         // Renderizar gráfico de dispositivos
         renderDevicesChart(data.devices);
@@ -306,16 +308,26 @@
     }
     
     /**
-     * Atualiza o gráfico de retenção
+     * Renderiza o gráfico de retenção de audiência usando a duração real do vídeo
+     * @param {Object} retentionData - Dados de retenção do vídeo
+     * @param {Number} intervalSeconds - Intervalo em segundos entre os pontos do gráfico (opcional)
      */
-    function updateRetentionChart(retentionData) {
+    function renderRetentionChart(retentionData, intervalSeconds = null) {
+        // Verificar se temos dados válidos
+        if (!retentionData || !retentionData.data || !retentionData.timePoints) {
+            console.error('Dados de retenção inválidos:', retentionData);
+            return;
+        }
+
         const ctx = document.getElementById('retention-chart').getContext('2d');
         
-        // Atualizar informação de densidade do gráfico
-        const pointDensity = $('#retention-density-slider').val();
-        console.log('Usando densidade de pontos:', pointDensity);
+        // Salvar dados globalmente para recalcular com diferentes intervalos
+        globalRetentionData = retentionData;
         
-        // Destruir gráfico existente se houver
+        console.log('Salvando dados para uso global:', retentionData);
+        console.log('Intervalo selecionado:', intervalSeconds || selectedIntervalSeconds);
+        
+        // Destruir gráfico anterior se existir
         if (retentionChart) {
             retentionChart.destroy();
         }
@@ -328,14 +340,104 @@
             $('#video-duration-info').hide();
         }
         
+        // Se o intervalo não foi especificado, usar o valor do slider
+        if (intervalSeconds === null) {
+            intervalSeconds = selectedIntervalSeconds;
+        }
+        
+        // Calcular intervalo baseado na duração do vídeo e no valor do controle deslizante
+        const videoDuration = retentionData.videoDuration || 0;
+        
+        console.log('Recalculando pontos para gráfico com intervalo de ' + intervalSeconds + ' segundos');
+        console.log('Duração total do vídeo: ' + videoDuration + ' segundos');
+        
+        // Criar pontos de tempo para o gráfico com o novo intervalo
+        const timePoints = [];
+        const percentageData = [];
+        const viewerCountsData = [];
+        const formattedLabels = [];
+        
+        // Gerar pontos baseados no intervalo selecionado
+        for (let time = 0; time <= videoDuration; time += intervalSeconds) {
+            timePoints.push(time);
+            
+            // Encontrar o índice mais próximo nos dados originais
+            const nearestIndex = findNearestTimeIndex(retentionData.timePoints, time);
+            
+            // Usar os valores do ponto mais próximo
+            percentageData.push(retentionData.data[nearestIndex]);
+            viewerCountsData.push(retentionData.viewerCounts[nearestIndex]);
+            
+            // Formatar a label para o tempo
+            const minutes = Math.floor(time / 60);
+            const seconds = time % 60;
+            formattedLabels.push(`${minutes}:${seconds < 10 ? '0' + seconds : seconds}`);
+        }
+        
+        // Garantir que o último ponto seja a duração máxima
+        if (timePoints.length > 0 && timePoints[timePoints.length - 1] !== videoDuration) {
+            const time = videoDuration;
+            timePoints.push(time);
+            
+            const nearestIndex = findNearestTimeIndex(retentionData.timePoints, time);
+            percentageData.push(retentionData.data[nearestIndex]);
+            viewerCountsData.push(retentionData.viewerCounts[nearestIndex]);
+            
+            const minutes = Math.floor(time / 60);
+            const seconds = time % 60;
+            formattedLabels.push(`${minutes}:${seconds < 10 ? '0' + seconds : seconds}`);
+        }
+        
+        console.log('Pontos calculados:', {
+            totalPoints: timePoints.length,
+            labels: formattedLabels,
+            percentageData: percentageData
+        });
+        
+        // Criar gráfico com os novos pontos calculados
+        createRetentionChart(ctx, formattedLabels, percentageData, viewerCountsData);
+    }
+    
+    /**
+     * Função auxiliar para encontrar o índice do tempo mais próximo
+     */
+    function findNearestTimeIndex(timePoints, targetTime) {
+        let nearestIndex = 0;
+        let minDiff = Number.MAX_VALUE;
+        
+        for (let i = 0; i < timePoints.length; i++) {
+            const diff = Math.abs(timePoints[i] - targetTime);
+            if (diff < minDiff) {
+                minDiff = diff;
+                nearestIndex = i;
+            }
+        }
+        
+        return nearestIndex;
+    }
+    
+    /**
+     * Cria o gráfico de retenção com os dados fornecidos
+     * @param {CanvasRenderingContext2D} ctx - Contexto do canvas
+     * @param {Array} labels - Labels formatadas para os pontos de tempo
+     * @param {Array} percentageData - Dados percentuais de retenção
+     * @param {Array} viewerCountsData - Número absoluto de visualizadores
+     */
+    function createRetentionChart(ctx, labels, percentageData, viewerCountsData) {
+        console.log('Criando gráfico de retenção com:', {
+            labels: labels,
+            percentageData: percentageData,
+            viewerCountsData: viewerCountsData
+        });
+        
         // Criar novo gráfico
         retentionChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: retentionData.labels,
+                labels: labels,
                 datasets: [{
                     label: 'Retenção de Audiência (%)',
-                    data: retentionData.data, // Usando o novo nome de propriedade
+                    data: percentageData,
                     backgroundColor: 'rgba(0, 115, 170, 0.1)',
                     borderColor: 'rgba(0, 115, 170, 1)',
                     borderWidth: 2,
@@ -360,14 +462,14 @@
                         callbacks: {
                             label: function(context) {
                                 const pointIndex = context.dataIndex;
-                                const timePoint = retentionData.timePoints[pointIndex];
                                 const percentage = context.parsed.y;
-                                const viewerCount = retentionData.viewerCounts ? retentionData.viewerCounts[pointIndex] : null;
+                                const viewerCount = viewerCountsData ? viewerCountsData[pointIndex] : null;
+                                const timeLabel = labels[pointIndex];
                                 
                                 if (viewerCount !== null) {
-                                    return `${percentage}% de retenção (${viewerCount} espectadores) em ${retentionData.labels[pointIndex]}`;
+                                    return `${percentage}% de retenção (${viewerCount} espectadores) em ${timeLabel}`;
                                 } else {
-                                    return `${percentage}% de retenção em ${retentionData.labels[pointIndex]}`;
+                                    return `${percentage}% de retenção em ${timeLabel}`;
                                 }
                             }
                         }

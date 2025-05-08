@@ -274,11 +274,62 @@
 }
 
 .chart-header {
-    padding: 20px 25px 0;
+    padding: 20px 25px;
     display: flex;
-    flex-wrap: wrap;
+    align-items: flex-start;
     justify-content: space-between;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+.retention-chart-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    margin-left: auto;
+    background-color: var(--vsl-secondary);
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: 1px solid var(--vsl-border);
+    min-width: 300px;
+}
+
+.retention-chart-controls label {
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: var(--vsl-text);
+    display: flex;
     align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+#interval-value {
+    font-weight: bold;
+    color: var(--vsl-primary);
+    margin: 0 5px;
+}
+
+.interval-slider {
+    width: 100%;
+    margin-bottom: 10px;
+    accent-color: var(--vsl-primary);
+}
+
+#apply-interval {
+    background-color: var(--vsl-primary);
+    color: white;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: var(--vsl-transition);
+}
+
+#apply-interval:hover {
+    background-color: var(--vsl-primary-hover);
 }
 
 .section-title {
@@ -350,58 +401,22 @@
     margin-top: 30px;
     margin-bottom: 15px;
     padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    color: #23282d;
+    font-size: 16px;
 }
 
 /* Estilos para as novas funcionalidades */
-.retention-controls {
-display: flex;
-flex-direction: column;
-align-items: flex-end;
-gap: 10px;
-}
-
-.retention-density-control {
-display: flex;
-align-items: center;
-gap: 10px;
-background-color: #f0f0f1;
-padding: 5px 10px;
-border-radius: 4px;
-font-size: 12px;
-}
-
-.retention-density-control label {
-font-weight: 500;
-white-space: nowrap;
-}
-
-.retention-density-control input[type="range"] {
-width: 120px;
-margin: 0;
-}
-
-#retention-density-value {
-font-weight: bold;
-min-width: 30px;
-text-align: center;
-color: var(--vsl-primary);
-}
-
 .referrers-options {
-display: flex;
-align-items: center;
-margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
 }
 
 .url-grouping-toggle {
-margin-left: auto;
-display: flex;
-align-items: center;
-background: var(--vsl-secondary);
-padding: 8px 15px;
-border-radius: 20px;
-font-size: 13px;
-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    margin-left: auto;
+    display: flex;
+    align-items: center;
     background: var(--vsl-secondary);
     padding: 8px 15px;
     border-radius: 20px;
