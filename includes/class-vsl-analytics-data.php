@@ -175,6 +175,7 @@ class VSL_Analytics_Data {
         
         $total_progress = 0;
         $completed = 0;
+        $sessions_with_plays = []; // Array para armazenar apenas sessões com first_play
         
         // Usar a duração do vídeo da primeira sessão (todas devem ter o mesmo valor)
         $video_duration = 0;
@@ -187,8 +188,15 @@ class VSL_Analytics_Data {
             $video_duration = intval(get_post_meta($video_id, '_vsl_player_video_length', true));
         }
         
-        // Calcular métricas
+        // Filtrar apenas as sessões com first_play não nulo
         foreach ($sessions as $session) {
+            if (!empty($session['first_play'])) {
+                $sessions_with_plays[] = $session;
+            }
+        }
+        
+        // Calcular métricas usando apenas sessões com first_play
+        foreach ($sessions_with_plays as $session) {
             $total_progress += intval($session['max_progress_sec']);
             
             // Considerar completado se assistiu pelo menos 95% do vídeo ou
@@ -226,6 +234,17 @@ class VSL_Analytics_Data {
      * @return array Dados de retenção formatados para Chart.js
      */
     private function calculate_retention_data($sessions, $video_id) {
+        // Filtrar apenas as sessões com first_play não nulo
+        $sessions_with_plays = [];
+        foreach ($sessions as $session) {
+            if (!empty($session['first_play'])) {
+                $sessions_with_plays[] = $session;
+            }
+        }
+        
+        // Usar as sessões filtradas para todos os cálculos
+        $sessions = $sessions_with_plays;
+        
         // Determinar a duração máxima do vídeo
         $max_duration = 0;
         
