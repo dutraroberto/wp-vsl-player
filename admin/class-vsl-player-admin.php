@@ -573,17 +573,41 @@ class VSL_Player_Admin {
             <div class="vsl-analytics-container vsl-analytics-fullwidth">
                 <!-- Filtros -->
                 <div class="vsl-analytics-filters">
-                    <div class="vsl-analytics-filter-group">
-                        <label for="video_filter"><?php echo esc_html__('Selecione o Vídeo:', 'vsl-player'); ?></label>
-                        <select id="video_filter" name="video_filter" required>
-                            <option value="" disabled selected><?php echo esc_html__('Escolha um vídeo...', 'vsl-player'); ?></option>
-                            <?php foreach ($vsl_players as $player): ?>
-                                <option value="<?php echo esc_attr($player->ID); ?>">
-                                    <?php echo esc_html($player->post_title); ?>
-                                </option>
+                    <div class="vsl-analytics-filter-group vsl-video-selector-group">
+                        <label><?php echo esc_html__('Selecione o Vídeo:', 'vsl-player'); ?></label>
+                        <input type="hidden" id="video_filter" name="video_filter" value="">
+                        <div class="vsl-video-grid">
+                            <?php foreach ($vsl_players as $player): 
+                                $thumbnail = get_the_post_thumbnail_url($player->ID, 'medium');
+                                $has_thumbnail = !empty($thumbnail);
+                                if (!$has_thumbnail) {
+                                    // SVG placeholder inline
+                                    $thumbnail = 'data:image/svg+xml;base64,' . base64_encode('
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+                                            <rect fill="#4460df" width="1920" height="1080"/>
+                                            <g transform="translate(960, 540)">
+                                                <circle fill="rgba(255,255,255,0.2)" r="150"/>
+                                                <path fill="white" d="M-50,-70 L-50,70 L80,0 Z"/>
+                                            </g>
+                                        </svg>
+                                    ');
+                                }
+                            ?>
+                                <div class="vsl-video-card" data-video-id="<?php echo esc_attr($player->ID); ?>">
+                                    <div class="vsl-video-thumbnail <?php echo !$has_thumbnail ? 'no-thumbnail' : ''; ?>">
+                                        <img src="<?php echo esc_url($thumbnail); ?>" alt="<?php echo esc_attr($player->post_title); ?>">
+                                        <div class="vsl-video-overlay">
+                                            <span class="dashicons dashicons-video-alt3"></span>
+                                        </div>
+                                    </div>
+                                    <div class="vsl-video-info">
+                                        <h4><?php echo esc_html($player->post_title); ?></h4>
+                                        <span class="vsl-video-id">ID: <?php echo esc_html($player->ID); ?></span>
+                                    </div>
+                                </div>
                             <?php endforeach; ?>
-                        </select>
-                        <p class="filter-description"><?php echo esc_html__('Por favor, selecione um vídeo para visualizar suas métricas.', 'vsl-player'); ?></p>
+                        </div>
+                        <p class="filter-description"><?php echo esc_html__('Clique em um vídeo para visualizar suas métricas.', 'vsl-player'); ?></p>
                     </div>
                     
                     <div class="vsl-analytics-filter-group date-filter-group">
