@@ -425,6 +425,28 @@ class VSL_Player_CPT {
                         
                         <div class="vsl-field-row">
                             <div class="vsl-field-label">
+                                <label><?php echo esc_html__('Modo de Revelação', 'vsl-player'); ?></label>
+                                <p class="description"><?php echo esc_html__('Escolha quando o elemento deve ser revelado.', 'vsl-player'); ?></p>
+                            </div>
+                            <div class="vsl-field-input">
+                                <?php 
+                                $offer_reveal_mode = get_post_meta($post->ID, '_vsl_offer_reveal_mode', true) ?: 'video';
+                                ?>
+                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <label style="display: flex; align-items: center; gap: 8px;">
+                                        <input type="radio" name="vsl_offer_reveal_mode" value="video" <?php checked($offer_reveal_mode, 'video'); ?>>
+                                        <span><?php echo esc_html__('Após o usuário assistir X segundos do vídeo', 'vsl-player'); ?></span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 8px;">
+                                        <input type="radio" name="vsl_offer_reveal_mode" value="page" <?php checked($offer_reveal_mode, 'page'); ?>>
+                                        <span><?php echo esc_html__('Após X segundos de permanência na página', 'vsl-player'); ?></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="vsl-field-row">
+                            <div class="vsl-field-label">
                                 <label for="vsl_offer_reveal_time"><?php echo esc_html__('Tempo até revelar', 'vsl-player'); ?></label>
                                 <p class="description"><?php echo esc_html__('Defina o tempo em segundos até que o elemento seja revelado.', 'vsl-player'); ?></p>
                             </div>
@@ -884,6 +906,10 @@ class VSL_Player_CPT {
             
             if (isset($_POST['vsl_offer_reveal_class'])) {
                 update_post_meta($post_id, '_vsl_offer_reveal_class', sanitize_text_field($_POST['vsl_offer_reveal_class']));
+            }
+            
+            if (isset($_POST['vsl_offer_reveal_mode'])) {
+                update_post_meta($post_id, '_vsl_offer_reveal_mode', sanitize_text_field($_POST['vsl_offer_reveal_mode']));
             }
             
             if (isset($_POST['vsl_offer_reveal_time'])) {
