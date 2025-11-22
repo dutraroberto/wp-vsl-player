@@ -20,11 +20,6 @@ class VSL_Player_License {
         // Set up cron job for automatic license validation
         add_action('vsl_player_daily_license_check', array($this, 'daily_license_check'));
         
-        // Set up cron schedule on plugin activation
-        if (!wp_next_scheduled('vsl_player_daily_license_check')) {
-            wp_schedule_event(time(), 'daily', 'vsl_player_daily_license_check');
-        }
-        
         // Block access to restricted areas if license is invalid
         add_action('current_screen', array($this, 'restrict_access_if_invalid_license'));
     }
@@ -91,8 +86,18 @@ class VSL_Player_License {
      * @return array Validation result
      */
     private function validate_license($license_key, $is_background = false) {
+        // Verificar cache primeiro (válido por 12 horas)
+        $cache_key = 'vsl_license_check_' . md5($license_key);
+        $cached_result = get_transient($cache_key);
+        
+        if ($cached_result !== false && $is_background) {
+            return $cached_result;
+        }
+        
         $api_url = 'https://plugins.mundowp.com.br/wp-json/mundowp/v1/validate';
-        $domain = $_SERVER['HTTP_HOST'];
+        
+        // Sanitizar domain para segurança básica
+        $domain = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field($_SERVER['HTTP_HOST']) : parse_url(home_url(), PHP_URL_HOST);
         
         $response = wp_remote_post($api_url, array(
             'body' => wp_json_encode(array(
@@ -108,22 +113,37 @@ class VSL_Player_License {
             $error_message = $response->get_error_message();
             
             if ($is_background) {
-                // For background checks, default to the previous status if we can't reach the server
+                // Para checks em background, incrementar contador de falhas
+                $fail_count = get_option('vsl_license_fail_count', 0);
+                $fail_count++;
+                update_option('vsl_license_fail_count', $fail_count);
+                
+                // Se falhou mais de 7 vezes consecutivas, invalidar licença
+                if ($fail_count > 7) {
+                    update_option('vsl_player_license_status', 'inactive');
+                    delete_option('vsl_player_license_expiry');
+                    delete_option('vsl_license_fail_count');
+                    
+                    return array(
+                        'success' => false,
+                        'message' => __('Licença invalidada após múltiplas falhas de verificação.', 'vsl-player'),
+                        'status' => 'inactive'
+                    );
+                }
+                
+                // Manter status anterior temporariamente
                 return array(
                     'success' => false,
-                    'message' => sprintf(__('Erro ao verificar licença: %s. Por favor, tente novamente mais tarde.', 'vsl-player'), $error_message),
+                    'message' => sprintf(__('Erro ao verificar licença: %s. Tentativa %d/7.', 'vsl-player'), $error_message, $fail_count),
                     'status' => get_option('vsl_player_license_status', 'inactive')
                 );
             }
             
-            // Update license status as inactive if this was a manual check
-            update_option('vsl_player_license_status', 'inactive');
-            delete_option('vsl_player_license_expiry');
-            
+            // Para validação manual, não invalidar imediatamente
             return array(
                 'success' => false,
-                'message' => sprintf(__('Erro ao verificar licença: %s. Por favor, tente novamente mais tarde.', 'vsl-player'), $error_message),
-                'status' => 'inactive'
+                'message' => sprintf(__('Erro ao verificar licença: %s. Por favor, tente novamente.', 'vsl-player'), $error_message),
+                'status' => get_option('vsl_player_license_status', 'inactive')
             );
         }
         
@@ -134,6 +154,7 @@ class VSL_Player_License {
             // License is valid
             update_option('vsl_player_license_key', $license_key);
             update_option('vsl_player_license_status', 'active');
+            delete_option('vsl_license_fail_count'); // Resetar contador de falhas
             
             $expiry_date = '';
             if (isset($data['expiration_date'])) {
@@ -143,24 +164,35 @@ class VSL_Player_License {
                 update_option('vsl_player_license_expiry', $expiry_date);
             }
             
-            return array(
+            $result = array(
                 'success' => true,
                 'message' => __('Licença ativada com sucesso! Seu plugin está pronto para uso.', 'vsl-player'),
                 'status' => 'active',
                 'expiry' => $expiry_date
             );
+            
+            // Armazenar em cache por 12 horas
+            set_transient($cache_key, $result, 12 * HOUR_IN_SECONDS);
+            
+            return $result;
         } else {
             // License is invalid
             update_option('vsl_player_license_status', 'inactive');
             delete_option('vsl_player_license_expiry');
+            delete_option('vsl_license_fail_count');
             
             $error_message = isset($data['message']) ? $data['message'] : __('Chave de licença inválida. Por favor, verifique sua chave e tente novamente.', 'vsl-player');
             
-            return array(
+            $result = array(
                 'success' => false,
                 'message' => $error_message,
                 'status' => 'inactive'
             );
+            
+            // Armazenar resultado negativo em cache por 1 hora
+            set_transient($cache_key, $result, HOUR_IN_SECONDS);
+            
+            return $result;
         }
     }
 
@@ -295,10 +327,21 @@ class VSL_Player_License {
 
     /**
      * Check if the license is valid
+     * 
+     * @return bool True if license is active
      */
     public function is_license_valid() {
         $license_status = get_option('vsl_player_license_status', 'inactive');
         return ($license_status === 'active');
+    }
+    
+    /**
+     * Setup cron on plugin activation
+     */
+    public static function activate() {
+        if (!wp_next_scheduled('vsl_player_daily_license_check')) {
+            wp_schedule_event(time(), 'daily', 'vsl_player_daily_license_check');
+        }
     }
     
     /**

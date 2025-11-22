@@ -53,11 +53,17 @@ class VSL_Analytics_Installer {
 				utm_medium        VARCHAR(100) NULL,
 				utm_campaign      VARCHAR(100) NULL,
 				PRIMARY KEY (session_id, video_post_id),
-				KEY video_date (video_post_id, first_impression)
+				KEY video_date (video_post_id, first_impression),
+				KEY idx_video_date_play (video_post_id, first_impression, first_play),
+				KEY idx_date_range (first_impression),
+				KEY idx_completed (video_post_id, completed)
 			) $charset_collate;";
 
 			require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 			dbDelta( $sql );
+		} else {
+			// Tabela já existe, adicionar índices se não existirem
+			self::add_indexes_if_not_exist();
 		}
 		
 		// Nova tabela de vídeos
@@ -74,6 +80,63 @@ class VSL_Analytics_Installer {
 
 			require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 			dbDelta( $sql );
+		}
+	}
+	
+	/**
+	 * Adiciona índices otimizados em tabelas existentes
+	 * 
+	 * @since 1.4.1
+	 * @return void
+	 */
+	private static function add_indexes_if_not_exist() {
+		global $wpdb;
+		
+		$sessions_table = $wpdb->prefix . 'vsl_sessions';
+		
+		// Verificar e adicionar índice composto video_date_play
+		$index_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				"SHOW INDEX FROM {$sessions_table} WHERE Key_name = %s",
+				'idx_video_date_play'
+			)
+		);
+		
+		if ( empty( $index_exists ) ) {
+			$wpdb->query(
+				"ALTER TABLE {$sessions_table} 
+				ADD INDEX idx_video_date_play (video_post_id, first_impression, first_play)"
+			);
+		}
+		
+		// Verificar e adicionar índice de range de datas
+		$index_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				"SHOW INDEX FROM {$sessions_table} WHERE Key_name = %s",
+				'idx_date_range'
+			)
+		);
+		
+		if ( empty( $index_exists ) ) {
+			$wpdb->query(
+				"ALTER TABLE {$sessions_table} 
+				ADD INDEX idx_date_range (first_impression)"
+			);
+		}
+		
+		// Verificar e adicionar índice de vídeos completados
+		$index_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				"SHOW INDEX FROM {$sessions_table} WHERE Key_name = %s",
+				'idx_completed'
+			)
+		);
+		
+		if ( empty( $index_exists ) ) {
+			$wpdb->query(
+				"ALTER TABLE {$sessions_table} 
+				ADD INDEX idx_completed (video_post_id, completed)"
+			);
 		}
 	}
 }

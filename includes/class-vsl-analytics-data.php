@@ -76,8 +76,8 @@ class VSL_Analytics_Data {
         // Processar dados de retenção
         $retention_data = $this->calculate_retention_data($session_data, $video_id);
         
-        // Calcular métricas de resumo
-        $summary = $this->calculate_summary_metrics($session_data, $video_id);
+        // Calcular métricas de resumo (usando método otimizado com agregação SQL)
+        $summary = $this->calculate_summary_metrics_optimized($video_id, $date_start, $date_end);
         
         // Processar dados de dispositivos
         $devices_data = $this->calculate_devices_data($session_data);
@@ -126,29 +126,74 @@ class VSL_Analytics_Data {
      * @param int $video_id ID do vídeo para filtrar (0 para todos)
      * @param string $date_start Data inicial no formato Y-m-d
      * @param string $date_end Data final no formato Y-m-d
+     * @param int $limit Limite de resultados (padrão: 5000)
+     * @param int $offset Offset para paginação (padrão: 0)
      * @return array Array de sessões com duração do vídeo
      */
-    private function get_sessions_data($video_id, $date_start, $date_end) {
+    private function get_sessions_data($video_id, $date_start, $date_end, $limit = 5000, $offset = 0) {
         global $wpdb;
         
         $sessions_table = $wpdb->prefix . 'vsl_sessions';
+        $archive_table = $wpdb->prefix . 'vsl_sessions_archive';
         $videos_table = $wpdb->prefix . 'vsl_videos';
         
-        // Construir consulta SQL com LEFT JOIN para obter a duração do vídeo
-        $sql = "SELECT s.*, v.video_duration_sec 
-                FROM {$sessions_table} s 
-                LEFT JOIN {$videos_table} v ON s.video_post_id = v.video_post_id 
-                WHERE s.first_impression >= %s AND s.first_impression <= %s";
-        $params = array($date_start, $date_end);
+        // Verificar se a tabela de arquivo existe
+        $archive_exists = $wpdb->get_var("SHOW TABLES LIKE '$archive_table'") === $archive_table;
         
-        // Adicionar filtro de vídeo se especificado
-        if ($video_id > 0) {
-            $sql .= " AND s.video_post_id = %d";
-            $params[] = $video_id;
+        // Calcular se o período solicitado inclui dados arquivados (> 90 dias atrás)
+        $archive_cutoff = date('Y-m-d H:i:s', strtotime('-90 days'));
+        $needs_archive = $archive_exists && ($date_start < $archive_cutoff);
+        
+        if ($needs_archive) {
+            // UNION: Buscar em ambas as tabelas (ativa + arquivo)
+            $sql = "SELECT s.*, v.video_duration_sec 
+                    FROM {$sessions_table} s 
+                    LEFT JOIN {$videos_table} v ON s.video_post_id = v.video_post_id 
+                    WHERE s.first_impression >= %s AND s.first_impression <= %s";
+            $params = array($date_start, $date_end);
+            
+            if ($video_id > 0) {
+                $sql .= " AND s.video_post_id = %d";
+                $params[] = $video_id;
+            }
+            
+            // UNION com tabela de arquivo
+            $sql .= " UNION ALL 
+                    SELECT s.*, v.video_duration_sec 
+                    FROM {$archive_table} s 
+                    LEFT JOIN {$videos_table} v ON s.video_post_id = v.video_post_id 
+                    WHERE s.first_impression >= %s AND s.first_impression <= %s";
+            $params[] = $date_start;
+            $params[] = $date_end;
+            
+            if ($video_id > 0) {
+                $sql .= " AND s.video_post_id = %d";
+                $params[] = $video_id;
+            }
+            
+            // Ordenar resultado combinado
+            $sql .= " ORDER BY first_impression DESC";
+            
+        } else {
+            // Buscar apenas na tabela principal (dados recentes)
+            $sql = "SELECT s.*, v.video_duration_sec 
+                    FROM {$sessions_table} s 
+                    LEFT JOIN {$videos_table} v ON s.video_post_id = v.video_post_id 
+                    WHERE s.first_impression >= %s AND s.first_impression <= %s";
+            $params = array($date_start, $date_end);
+            
+            if ($video_id > 0) {
+                $sql .= " AND s.video_post_id = %d";
+                $params[] = $video_id;
+            }
+            
+            $sql .= " ORDER BY s.first_impression DESC";
         }
         
-        // Ordenar por data
-        $sql .= " ORDER BY s.first_impression DESC";
+        // Adicionar limite e offset para paginação
+        $sql .= " LIMIT %d OFFSET %d";
+        $params[] = $limit;
+        $params[] = $offset;
         
         // Preparar e executar a consulta
         $query = $wpdb->prepare($sql, $params);
@@ -158,7 +203,139 @@ class VSL_Analytics_Data {
     }
     
     /**
-     * Calcula as métricas de resumo com base nos dados das sessões
+     * Calcula as métricas de resumo diretamente no banco de dados (otimizado)
+     * 
+     * @param int $video_id ID do vídeo
+     * @param string $date_start Data inicial no formato Y-m-d
+     * @param string $date_end Data final no formato Y-m-d
+     * @return array Métricas de resumo
+     */
+    private function calculate_summary_metrics_optimized($video_id, $date_start, $date_end) {
+        // Tentar obter do cache primeiro
+        $cache_key = 'vsl_metrics_' . md5($video_id . '_' . $date_start . '_' . $date_end);
+        $cached_metrics = wp_cache_get($cache_key, 'vsl_analytics');
+        
+        if (false !== $cached_metrics) {
+            return $cached_metrics;
+        }
+        
+        global $wpdb;
+        
+        $sessions_table = $wpdb->prefix . 'vsl_sessions';
+        $archive_table = $wpdb->prefix . 'vsl_sessions_archive';
+        $videos_table = $wpdb->prefix . 'vsl_videos';
+        
+        // Verificar se precisa incluir dados arquivados
+        $archive_exists = $wpdb->get_var("SHOW TABLES LIKE '$archive_table'") === $archive_table;
+        $archive_cutoff = date('Y-m-d H:i:s', strtotime('-90 days'));
+        $needs_archive = $archive_exists && ($date_start < $archive_cutoff);
+        
+        if ($needs_archive) {
+            // Query com UNION para agregar dados de ambas as tabelas
+            $sql = "SELECT 
+                        SUM(total_views) as total_views,
+                        AVG(avg_watch_time) as avg_watch_time,
+                        SUM(completed_count) as completed_count,
+                        MAX(video_duration_sec) as video_duration_sec
+                    FROM (
+                        SELECT 
+                            COUNT(CASE WHEN s.first_play IS NOT NULL THEN 1 END) as total_views,
+                            COALESCE(AVG(CASE WHEN s.first_play IS NOT NULL THEN s.max_progress_sec END), 0) as avg_watch_time,
+                            COUNT(CASE WHEN s.completed = 1 THEN 1 END) as completed_count,
+                            v.video_duration_sec
+                        FROM {$sessions_table} s
+                        LEFT JOIN {$videos_table} v ON s.video_post_id = v.video_post_id
+                        WHERE s.first_impression >= %s AND s.first_impression <= %s";
+            
+            $params = array($date_start, $date_end);
+            
+            if ($video_id > 0) {
+                $sql .= " AND s.video_post_id = %d";
+                $params[] = $video_id;
+            }
+            
+            $sql .= " UNION ALL
+                        SELECT 
+                            COUNT(CASE WHEN s.first_play IS NOT NULL THEN 1 END) as total_views,
+                            COALESCE(AVG(CASE WHEN s.first_play IS NOT NULL THEN s.max_progress_sec END), 0) as avg_watch_time,
+                            COUNT(CASE WHEN s.completed = 1 THEN 1 END) as completed_count,
+                            v.video_duration_sec
+                        FROM {$archive_table} s
+                        LEFT JOIN {$videos_table} v ON s.video_post_id = v.video_post_id
+                        WHERE s.first_impression >= %s AND s.first_impression <= %s";
+            
+            $params[] = $date_start;
+            $params[] = $date_end;
+            
+            if ($video_id > 0) {
+                $sql .= " AND s.video_post_id = %d";
+                $params[] = $video_id;
+            }
+            
+            $sql .= ") as combined_data";
+            
+        } else {
+            // Query otimizada com agregação SQL (apenas tabela principal)
+            $sql = "SELECT 
+                        COUNT(CASE WHEN s.first_play IS NOT NULL THEN 1 END) as total_views,
+                        COALESCE(AVG(CASE WHEN s.first_play IS NOT NULL THEN s.max_progress_sec END), 0) as avg_watch_time,
+                        COUNT(CASE WHEN s.completed = 1 THEN 1 END) as completed_count,
+                        v.video_duration_sec
+                    FROM {$sessions_table} s
+                    LEFT JOIN {$videos_table} v ON s.video_post_id = v.video_post_id
+                    WHERE s.first_impression >= %s AND s.first_impression <= %s";
+            
+            $params = array($date_start, $date_end);
+            
+            if ($video_id > 0) {
+                $sql .= " AND s.video_post_id = %d";
+                $params[] = $video_id;
+            }
+            
+            $sql .= " GROUP BY v.video_duration_sec";
+        }
+        
+        $result = $wpdb->get_row($wpdb->prepare($sql, $params));
+        
+        if (!$result) {
+            return array(
+                'total_views' => 0,
+                'avg_watch_time' => '0s',
+                'completion_rate' => 0,
+                'video_duration' => 0,
+                'formatted_duration' => '0s'
+            );
+        }
+        
+        $total_views = intval($result->total_views);
+        $avg_watch_time = round(floatval($result->avg_watch_time));
+        $completed_count = intval($result->completed_count);
+        $video_duration = intval($result->video_duration_sec);
+        
+        // Fallback para metadados legados se não houver duração
+        if ($video_duration <= 0 && $video_id > 0) {
+            $video_duration = intval(get_post_meta($video_id, '_vsl_player_video_length', true));
+        }
+        
+        // Calcular taxa de conclusão
+        $completion_rate = $total_views > 0 ? round(($completed_count / $total_views) * 100) : 0;
+        
+        $metrics = array(
+            'total_views' => $total_views,
+            'avg_watch_time' => $this->format_seconds($avg_watch_time),
+            'completion_rate' => $completion_rate,
+            'video_duration' => $video_duration,
+            'formatted_duration' => $this->format_seconds($video_duration)
+        );
+        
+        // Salvar no cache por 1 hora
+        wp_cache_set($cache_key, $metrics, 'vsl_analytics', HOUR_IN_SECONDS);
+        
+        return $metrics;
+    }
+    
+    /**
+     * Calcula as métricas de resumo com base nos dados das sessões (método legado mantido para compatibilidade)
      * 
      * @param array $sessions Dados das sessões (incluindo video_duration_sec do JOIN)
      * @param int $video_id ID do vídeo

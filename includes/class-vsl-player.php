@@ -37,6 +37,7 @@ class VSL_Player {
         require_once VSL_PLAYER_DIR . 'includes/class-vsl-analytics-rest.php';
         require_once VSL_PLAYER_DIR . 'includes/class-vsl-analytics.php';
         require_once VSL_PLAYER_DIR . 'includes/class-vsl-analytics-data.php';
+        require_once VSL_PLAYER_DIR . 'includes/class-vsl-analytics-archiver.php';
         require_once VSL_PLAYER_DIR . 'includes/class-vsl-videos-table.php';
     }
 
@@ -62,6 +63,9 @@ class VSL_Player {
         // Initialize analytics
         $analytics = new VSL_Analytics();
         $analytics->init();
+        
+        // Initialize analytics archiver
+        $archiver = new VSL_Analytics_Archiver();
         
         // Register activation and deactivation hooks
         register_activation_hook(VSL_PLAYER_DIR . 'vsl-player.php', array($this, 'activate'));
@@ -97,6 +101,9 @@ class VSL_Player {
         // Create analytics tables
         VSL_Analytics_Installer::install();
         
+        // Setup license cron job
+        VSL_Player_License::activate();
+        
         // Actions to perform on activation
         flush_rewrite_rules();
     }
@@ -105,6 +112,12 @@ class VSL_Player {
      * Plugin deactivation
      */
     public function deactivate() {
+        // Cancelar agendamento de arquivamento
+        VSL_Analytics_Archiver::unschedule_archiving();
+        
+        // Cancelar agendamento de verificação de licença
+        VSL_Player_License::deactivate();
+        
         // Actions to perform on deactivation
         flush_rewrite_rules();
     }

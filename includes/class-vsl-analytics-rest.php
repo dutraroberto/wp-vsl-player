@@ -54,19 +54,22 @@ class VSL_Analytics_REST {
 	 * @return bool
 	 */
 	public function check_permission( $request ) {
-		// Debug para verificar o nonce que está chegando
+		// Verificação de nonce reativada para maior segurança
 		$nonce = $request->get_header('x-wp-nonce');
-		error_log('[VSL Analytics REST] Verificando nonce: ' . $nonce);
 		
-		// Torna a API pública para simplificar testes
-		return true;
+		// Log condicional apenas em modo debug
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log('[VSL Analytics REST] Verificando nonce: ' . $nonce);
+		}
 		
-		/* Descomente após resolver os problemas de nonce
-		return wp_verify_nonce(
-			$request->get_header('x-wp-nonce'),
-			'vsl_analytics_collect'
-		);
-		*/
+		// Verificar o nonce
+		$valid = wp_verify_nonce( $nonce, 'vsl_analytics_collect' );
+		
+		if ( ! $valid && defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log('[VSL Analytics REST] Nonce inválido ou ausente');
+		}
+		
+		return $valid;
 	}
 
 	/**

@@ -47,7 +47,9 @@ class VSL_Analytics {
 		global $vsl_analytics;
 		$vsl_analytics = $this;
 		
-		error_log( '[VSL Analytics] Sistema inicializado' );
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( '[VSL Analytics] Sistema inicializado' );
+		}
 	}
 
 	/**
@@ -66,7 +68,9 @@ class VSL_Analytics {
 			true
 		);
 		
-		error_log( '[VSL Analytics] Script registrado: ' . VSL_PLAYER_URL . 'public/js/vsl-analytics.js' );
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( '[VSL Analytics] Script registrado: ' . VSL_PLAYER_URL . 'public/js/vsl-analytics.js' );
+		}
 	}
 
 	/**
@@ -79,11 +83,15 @@ class VSL_Analytics {
 	 */
 	public function enqueue_analytics( $post_id, $youtube_id ) {
 		// Log para depuração
-		error_log( '[VSL Analytics] Ativando analytics para post_id: ' . $post_id . ', youtube_id: ' . $youtube_id );
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( '[VSL Analytics] Ativando analytics para post_id: ' . $post_id . ', youtube_id: ' . $youtube_id );
+		}
 		
 		// Verifica parâmetros válidos
 		if ( empty( $post_id ) || empty( $youtube_id ) ) {
-			error_log( '[VSL Analytics] ERRO: post_id ou youtube_id vazios' );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( '[VSL Analytics] ERRO: post_id ou youtube_id vazios' );
+			}
 			return;
 		}
 		
@@ -91,7 +99,9 @@ class VSL_Analytics {
 		if ( ! wp_script_is( 'vsl-analytics', 'enqueued' ) ) {
 			// Verifica se o script está registrado
 			if ( ! wp_script_is( 'vsl-analytics', 'registered' ) ) {
-				error_log( '[VSL Analytics] ERRO: Script não está registrado. Chamando register_scripts()' );
+				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+					error_log( '[VSL Analytics] ERRO: Script não está registrado. Chamando register_scripts()' );
+				}
 				$this->register_scripts();
 			}
 			
@@ -113,9 +123,13 @@ class VSL_Analytics {
 				$analytics_data
 			);
 			
-			error_log( '[VSL Analytics] Script enfileirado com sucesso. Dados: ' . wp_json_encode( $analytics_data ) );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( '[VSL Analytics] Script enfileirado com sucesso. Dados: ' . wp_json_encode( $analytics_data ) );
+			}
 		} else {
-			error_log( '[VSL Analytics] Script já estava enfileirado' );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( '[VSL Analytics] Script já estava enfileirado' );
+			}
 		}
 	}
 
