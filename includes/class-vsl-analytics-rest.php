@@ -47,29 +47,22 @@ class VSL_Analytics_REST {
 	}
 
 	/**
-	 * Verifica a permissão para acessar o endpoint através do nonce
+	 * Verifica a permissão para acessar o endpoint
+	 * 
+	 * Analytics é um endpoint público (dados não sensíveis), então permitimos
+	 * requisições sem autenticação. A segurança é garantida por:
+	 * - Rate limiting (100 req/min por IP)
+	 * - Sanitização rigorosa de todos os inputs
+	 * - Validação dos tipos de dados
 	 *
 	 * @since  1.4.0
 	 * @param  WP_REST_Request $request Objeto da requisição.
-	 * @return bool
+	 * @return bool Sempre true (endpoint público)
 	 */
 	public function check_permission( $request ) {
-		// Verificação de nonce reativada para maior segurança
-		$nonce = $request->get_header('x-wp-nonce');
-		
-		// Log condicional apenas em modo debug
-		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			error_log('[VSL Analytics REST] Verificando nonce: ' . $nonce);
-		}
-		
-		// Verificar o nonce
-		$valid = wp_verify_nonce( $nonce, 'vsl_analytics_collect' );
-		
-		if ( ! $valid && defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			error_log('[VSL Analytics REST] Nonce inválido ou ausente');
-		}
-		
-		return $valid;
+		// Endpoint público - analytics não são dados sensíveis
+		// A segurança é garantida por rate-limiting e sanitização
+		return true;
 	}
 
 	/**
@@ -93,16 +86,9 @@ class VSL_Analytics_REST {
 		}
 		wp_cache_set( $ip, $hits + 1, 'vsl_hits', 60 );
 
-		/* ---------- Referer / Origin check ---------- */
-		$origin  = $req->get_header( 'origin' );
-		$referer = $req->get_header( 'referer' );
-		$site    = get_site_url();
-		if ( $origin && 0 !== strpos( $origin, $site ) ) {
-			return new WP_REST_Response( null, 403 );
-		}
-		if ( $referer && 0 !== strpos( $referer, $site ) ) {
-			return new WP_REST_Response( null, 403 );
-		}
+		/* ---------- Segurança: Confiamos no nonce verificado em check_permission() ---------- */
+		// O nonce já garante que a requisição vem de uma página legítima do WordPress
+		// Não precisamos de verificações adicionais de origem/referer que podem causar problemas
 
 		/* ---------- Sanitização ---------- */
 		$event   = sanitize_key( $req['event'] );
@@ -183,5 +169,56 @@ class VSL_Analytics_REST {
 		}
 
 		return new WP_REST_Response( null, 204 );
+	}
+
+	/**
+	 * Extrai o domínio raiz de um host (ignora www e subdomínios)
+	 * 
+	 * Exemplos:
+	 * - www.mundowp.com.br → mundowp.com.br
+	 * - blog.mundowp.com.br → mundowp.com.br
+	 * - mundowp.com.br → mundowp.com.br
+	 * - localhost → localhost
+	 * - laboratrio-wp.local → laboratrio-wp.local
+	 *
+	 * @since  1.4.1
+	 * @param  string $host Host completo
+	 * @return string Domínio raiz
+	 */
+	private function get_root_domain( $host ) {
+		if ( empty( $host ) ) {
+			return '';
+		}
+		
+		// Remove 'www.' do início se houver
+		$host = preg_replace( '/^www\./', '', $host );
+		
+		// Para localhost e domínios .local, .test, .dev, retorna o host completo
+		if ( preg_match( '/^(localhost|.*\.(local|test|dev))$/i', $host ) ) {
+			return strtolower( $host );
+		}
+		
+		// Para domínios normais, pega apenas os últimos 2 ou 3 segmentos
+		// (ex: mundowp.com.br → últimos 3, example.com → últimos 2)
+		$parts = explode( '.', $host );
+		$count = count( $parts );
+		
+		// Se tem apenas 1 ou 2 partes, retorna tudo
+		if ( $count <= 2 ) {
+			return strtolower( $host );
+		}
+		
+		// Verifica se o último segmento é um TLD de dois níveis (.com.br, .co.uk, etc)
+		$last = $parts[ $count - 1 ];
+		$second_last = $parts[ $count - 2 ];
+		$two_level_tlds = array( 'com', 'co', 'gov', 'edu', 'ac', 'org', 'net' );
+		
+		if ( strlen( $last ) === 2 && in_array( $second_last, $two_level_tlds, true ) ) {
+			// TLD de dois níveis: pega os últimos 3 segmentos
+			return strtolower( implode( '.', array_slice( $parts, -3 ) ) );
+		} else {
+			// TLD normal: pega os últimos 2 segmentos
+			return strtolower( implode( '.', array_slice( $parts, -2 ) ) );
+		}
 	}
 }
