@@ -16,7 +16,6 @@ O WP VSL Player é um plugin que otimiza a reprodução de vídeos do YouTube em
 - **Revelação de ofertas por tempo de vídeo assistido**: Mostre elementos na página após determinado tempo de vídeo assistido.
 - **Revelação de ofertas por tempo de permanência na página**: Mostre elementos na página após determinado tempo de permanência na página.
 
-
 ## Instruções de Instalação
 
 ### 1. Download e Upload
@@ -36,37 +35,50 @@ O WP VSL Player é um plugin que otimiza a reprodução de vídeos do YouTube em
 Para adquirir uma licença, visite: [https://mundowp.com.br/plugins/vsl-para-wordpress/](https://mundowp.com.br/plugins/vsl-para-wordpress/)
 
 ## Próximas atualizações
-- Sistema de analytics
+
 - Suporte para vídeos em outras proporções (atualmente 16:9)
 - Possibilidade para desativar o Autoplay
 - Novos botões de player
 
 ## Histórico de Versões
 
+### Versão 1.5.0 – Adição de Recurso
+
+- Nova funcionalidade: Dashboard de Analytics completo com métricas de retenção, conversão e perfil de audiência.
+- Melhoria: Otimização de performance com batching de eventos e cache inteligente.
+
 ### Versão 1.4.1 – Correção
+
 - Correção: Correção de erros menores.
 - Melhoria: Melhorias no desempenho.
 
 ### Versão 1.4.0 – Adição de Recurso
+
 - Nova funcionalidade: Atualizações automáticas pelo painel do WorPress.
 - Correção: Correção de erros menores.
 - Melhoria: Melhorias no desempenho.
 
 ### Versão 1.3.1 – Correção
+
 - Correção: O overlay de resumo não se escondia corretamente.
 - Correção: A altura do player não se ajustava corretamente em dispositivos móveis.
 
 ### Versão 1.3.0 – Adição de Recurso
+
 - Nova funcionalidade: Adição de ganchos inteligentes.
 
 ### Versão 1.2.0 – Adição de Recurso
+
 - Nova funcionalidade: Envio de eventos de conversão para Google Analytics, Google Ads e Facebook Pixel baseado em tempo de vídeo assistido.
 
 ### Versão 1.1.0 – Adição de Recurso
+
 - Nova funcionalidade: Revelar sessões após determinado tempo de vídeo assistido.
 
 ### Versão 1.0.0 – Lançamento Inicial
+
 Esta é a primeira versão do VSL para WordPress, trazendo funcionalidades essenciais para manipular o player de vídeo do YouTube:
+
 - Autoplayer inteligente
 - Barra de progresso fake
 - Thumbnail de saída
