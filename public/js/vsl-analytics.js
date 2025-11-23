@@ -15,11 +15,13 @@
 
   // Função de log para debug
   function vslAnalyticsLog(message, data) {
-    console.log(
-      "%c[VSL Analytics] " + message,
-      "background: #e74c3c; color: white; padding: 2px 5px; border-radius: 3px;",
-      data || ""
-    );
+    if (window.VSL_ANALYTICS && window.VSL_ANALYTICS.debug) {
+      console.log(
+        "%c[VSL Analytics] " + message,
+        "background: #e74c3c; color: white; padding: 2px 5px; border-radius: 3px;",
+        data || ""
+      );
+    }
   }
 
   vslAnalyticsLog("Script de analytics carregado");

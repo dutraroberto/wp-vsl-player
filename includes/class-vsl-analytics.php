@@ -114,7 +114,7 @@ class VSL_Analytics {
 				'post_id'  => $post_id,
 				'yt_id'    => $youtube_id,
 				'device'   => $this->detect_device(),
-				'debug'    => true,
+				'debug'    => ( defined( 'WP_DEBUG' ) && WP_DEBUG ),
 			);
 			
 			wp_localize_script(
