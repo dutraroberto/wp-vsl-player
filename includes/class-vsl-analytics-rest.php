@@ -44,6 +44,19 @@ class VSL_Analytics_REST {
 				),
 			)
 		);
+		
+		register_rest_route(
+			'vsl-analytics/v1', 
+			'/collect-batch', 
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'collect_batch_handler' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+				'args' => array(
+					'events' => array( 'required' => true, 'type' => 'array' ),
+				),
+			)
+		);
 	}
 
 	/**
@@ -169,6 +182,127 @@ class VSL_Analytics_REST {
 		}
 
 		return new WP_REST_Response( null, 204 );
+	}
+
+	/**
+	 * Manipula requisição em lote de múltiplos eventos
+	 *
+	 * @since  1.4.1
+	 * @param  WP_REST_Request $req Objeto da requisição.
+	 * @return WP_REST_Response
+	 */
+	public function collect_batch_handler( $req ) {
+		global $wpdb;
+		$ip = $_SERVER['REMOTE_ADDR'];
+
+		$hits = (int) wp_cache_get( $ip, 'vsl_hits' );
+		if ( $hits > 100 ) {
+			return new WP_REST_Response( null, 429 );
+		}
+
+		$events = $req['events'];
+		if ( ! is_array( $events ) || empty( $events ) ) {
+			return new WP_REST_Response( array( 'error' => 'Invalid events array' ), 400 );
+		}
+
+		$events = array_slice( $events, 0, 50 );
+		$processed = 0;
+
+		foreach ( $events as $event_data ) {
+			if ( ! isset( $event_data['event'], $event_data['sid'], $event_data['pid'] ) ) {
+				continue;
+			}
+
+			$event   = sanitize_key( $event_data['event'] );
+			$sid     = sanitize_text_field( $event_data['sid'] );
+			$pid     = absint( $event_data['pid'] );
+			$ytid    = isset( $event_data['ytid'] ) ? substr( preg_replace( '/[^a-zA-Z0-9_-]/', '', $event_data['ytid'] ), 0, 20 ) : '';
+			$sec     = isset( $event_data['progress_sec'] ) ? max( 0, min( 32767, intval( $event_data['progress_sec'] ) ) ) : 0;
+			$device  = isset( $event_data['device'] ) && in_array( $event_data['device'], array( 'desktop', 'tablet', 'mobile' ), true ) ? $event_data['device'] : '';
+			$url     = isset( $event_data['url'] ) ? esc_url_raw( $event_data['url'] ) : '';
+			$cta_inc = isset( $event_data['cta'] ) ? intval( $event_data['cta'] ) : 0;
+			
+			$utm_source   = isset( $event_data['utm_source'] ) ? sanitize_text_field( $event_data['utm_source'] ) : '';
+			$utm_medium   = isset( $event_data['utm_medium'] ) ? sanitize_text_field( $event_data['utm_medium'] ) : '';
+			$utm_campaign = isset( $event_data['utm_campaign'] ) ? sanitize_text_field( $event_data['utm_campaign'] ) : '';
+
+			$row = $wpdb->get_row( $wpdb->prepare(
+				"SELECT first_play, max_progress_sec, completed
+				FROM {$wpdb->prefix}vsl_sessions
+				WHERE session_id=%s AND video_post_id=%d",
+				$sid, $pid
+			) );
+
+			if ( 'progress' === $event && ( ! $row || empty( $row->first_play ) ) ) {
+				continue;
+			}
+
+			switch ( $event ) {
+				case 'impression':
+					$wpdb->query( $wpdb->prepare(
+						"INSERT IGNORE INTO {$wpdb->prefix}vsl_sessions
+						(session_id, video_post_id, youtube_video_id, first_impression,
+						device_type, page_url, utm_source, utm_medium, utm_campaign)
+						VALUES (%s,%d,%s,NOW(3),%s,%s,%s,%s,%s)",
+						$sid, $pid, $ytid, $device, $url,
+						$utm_source, $utm_medium, $utm_campaign
+					) );
+					break;
+
+				case 'play':
+					$wpdb->update(
+						"{$wpdb->prefix}vsl_sessions",
+						array( 'first_play' => current_time( 'mysql', true ) ),
+						array( 'session_id' => $sid, 'video_post_id' => $pid ),
+						array( '%s' ), array( '%s', '%d' )
+					);
+					break;
+
+				case 'progress':
+				case 'resume_action':
+					if ( $sec > $row->max_progress_sec ) {
+						$wpdb->update(
+							"{$wpdb->prefix}vsl_sessions",
+							array( 'max_progress_sec' => $sec ),
+							array( 'session_id' => $sid, 'video_post_id' => $pid ),
+							array( '%d' ), array( '%s', '%d' )
+						);
+					}
+					break;
+
+				case 'cta_click':
+					if ( $cta_inc > 0 ) {
+						$wpdb->query( $wpdb->prepare(
+							"UPDATE {$wpdb->prefix}vsl_sessions
+							SET cta_clicks = cta_clicks + %d
+							WHERE session_id=%s AND video_post_id=%d",
+							$cta_inc, $sid, $pid
+						) );
+					}
+					break;
+
+				case 'complete':
+				case 'exit':
+					$wpdb->query( $wpdb->prepare(
+						"UPDATE {$wpdb->prefix}vsl_sessions
+						SET completed = IF(%s='complete',1,completed),
+							max_progress_sec = GREATEST(max_progress_sec, %d)
+						WHERE session_id=%s AND video_post_id=%d",
+						$event, $sec, $sid, $pid
+					) );
+					break;
+			}
+
+			$processed++;
+		}
+
+		wp_cache_set( $ip, $hits + 1, 'vsl_hits', 60 );
+
+		return new WP_REST_Response( array( 
+			'success' => true, 
+			'processed' => $processed,
+			'total' => count( $events )
+		), 200 );
 	}
 
 	/**

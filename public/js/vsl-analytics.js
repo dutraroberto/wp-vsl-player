@@ -53,27 +53,86 @@
   const viewerId = localStorage.getItem("vsl_viewer_id") || generateUUID();
   localStorage.setItem("vsl_viewer_id", viewerId);
 
+  // Sistema de batching de eventos
+  const eventQueue = [];
+  const BATCH_SIZE = 5;
+  const BATCH_INTERVAL = 8000;
+  let flushTimer = null;
+
   /**
-   * Envia dados de analytics para a API REST
+   * Flush da fila de eventos para o servidor
+   */
+  function flushEventQueue() {
+    if (eventQueue.length === 0) return;
+
+    if (!window.VSL_ANALYTICS) {
+      vslAnalyticsLog("ERRO: VSL_ANALYTICS não está configurado");
+      eventQueue.length = 0;
+      return;
+    }
+
+    const eventsToSend = eventQueue.splice(0, 50);
+    const apiUrl =
+      window.location.origin + "/wp-json/vsl-analytics/v1/collect-batch";
+
+    vslAnalyticsLog("Enviando batch de eventos", {
+      count: eventsToSend.length,
+    });
+
+    fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ events: eventsToSend }),
+    })
+      .then(function (response) {
+        if (!response.ok) {
+          vslAnalyticsLog("Erro ao enviar batch", { status: response.status });
+        }
+        return response.json();
+      })
+      .then(function (data) {
+        vslAnalyticsLog("Batch enviado com sucesso", data);
+      })
+      .catch(function (error) {
+        vslAnalyticsLog("Erro de rede ao enviar batch", error);
+      });
+
+    if (flushTimer) {
+      clearTimeout(flushTimer);
+      flushTimer = null;
+    }
+  }
+
+  /**
+   * Agenda próximo flush automático
+   */
+  function scheduleNextFlush() {
+    if (flushTimer) {
+      clearTimeout(flushTimer);
+    }
+    flushTimer = setTimeout(flushEventQueue, BATCH_INTERVAL);
+  }
+
+  /**
+   * Envia dados de analytics para a fila (batching)
    *
    * @param {string} event - Tipo de evento (impression, play, progress, etc)
    * @param {Object} extra - Dados adicionais para o evento
+   * @param {boolean} immediate - Se true, envia imediatamente sem batching
    */
-  function sendAnalytics(event, extra = {}) {
-    vslAnalyticsLog("Tentando enviar analytics", {
+  function sendAnalytics(event, extra = {}, immediate = false) {
+    vslAnalyticsLog("Adicionando evento à fila", {
       event: event,
       extra: extra,
     });
 
     if (!window.VSL_ANALYTICS) {
-      vslAnalyticsLog(
-        "ERRO: VSL_ANALYTICS não está configurado",
-        window.VSL_ANALYTICS
-      );
+      vslAnalyticsLog("ERRO: VSL_ANALYTICS não está configurado");
       return;
     }
 
-    // Prepare os dados do evento
     const data = {
       event,
       sid: viewerId,
@@ -84,7 +143,6 @@
       ...extra,
     };
 
-    // Adicionar parâmetros UTM se disponíveis
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has("utm_source")) {
       data.utm_source = urlParams.get("utm_source");
@@ -96,29 +154,33 @@
       data.utm_campaign = urlParams.get("utm_campaign");
     }
 
-    // Usar fetch nativo (mais confiável que wp.apiFetch)
-    const apiUrl = window.location.origin + "/wp-json/vsl-analytics/v1/collect";
-
-    fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    })
-      .then(function (response) {
-        if (!response.ok) {
-          vslAnalyticsLog("Erro ao enviar analytics", {
-            status: response.status,
-            statusText: response.statusText,
-          });
-        }
-        return response;
-      })
-      .catch(function (error) {
-        vslAnalyticsLog("Erro de rede ao enviar analytics", error);
+    if (immediate) {
+      const apiUrl =
+        window.location.origin + "/wp-json/vsl-analytics/v1/collect";
+      fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
       });
+      return;
+    }
+
+    eventQueue.push(data);
+
+    if (eventQueue.length >= BATCH_SIZE) {
+      flushEventQueue();
+    } else {
+      scheduleNextFlush();
+    }
   }
+
+  window.addEventListener("beforeunload", function () {
+    if (eventQueue.length > 0) {
+      flushEventQueue();
+    }
+  });
 
   /**
    * Inicializa o sistema de analytics quando o DOM estiver pronto
@@ -129,9 +191,7 @@
       return;
     }
 
-    // Registrar impressão imediatamente
-
-    sendAnalytics("impression");
+    sendAnalytics("impression", {}, true);
 
     // Vamos adicionar um evento de clique ao botão de play SVG
     // Isso nos permite saber quando o usuário clica para iniciar o vídeo
@@ -185,9 +245,13 @@
       ) {
         const currentTime = Math.floor(window.vslYTPlayer.getCurrentTime());
 
-        sendAnalytics("exit", {
-          progress_sec: currentTime,
-        });
+        sendAnalytics(
+          "exit",
+          {
+            progress_sec: currentTime,
+          },
+          true
+        );
       }
     });
   });
@@ -347,10 +411,14 @@
             });
 
             // Registrar evento de conclusão do vídeo
-            sendAnalytics("complete", {
-              progress_sec: Math.floor(player.getDuration() || 0),
-              progress_percent: 100,
-            });
+            sendAnalytics(
+              "complete",
+              {
+                progress_sec: Math.floor(player.getDuration() || 0),
+                progress_percent: 100,
+              },
+              true
+            );
 
             // Limpar intervalo de progresso
             stopProgressTracking();
@@ -364,12 +432,16 @@
       // Detectar saída da página
       $(window).on("beforeunload", function () {
         if (player && player.getPlayerState && player.getPlayerState() !== 0) {
-          sendAnalytics("exit", {
-            progress_sec: Math.floor(player.getCurrentTime() || 0),
-            progress_percent: Math.round(
-              (player.getCurrentTime() / player.getDuration()) * 100
-            ),
-          });
+          sendAnalytics(
+            "exit",
+            {
+              progress_sec: Math.floor(player.getCurrentTime() || 0),
+              progress_percent: Math.round(
+                (player.getCurrentTime() / player.getDuration()) * 100
+              ),
+            },
+            true
+          );
         }
       });
     });

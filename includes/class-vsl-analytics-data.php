@@ -126,11 +126,11 @@ class VSL_Analytics_Data {
      * @param int $video_id ID do vídeo para filtrar (0 para todos)
      * @param string $date_start Data inicial no formato Y-m-d
      * @param string $date_end Data final no formato Y-m-d
-     * @param int $limit Limite de resultados (padrão: 5000)
+     * @param int $limit Limite de resultados (padrão: 500)
      * @param int $offset Offset para paginação (padrão: 0)
      * @return array Array de sessões com duração do vídeo
      */
-    private function get_sessions_data($video_id, $date_start, $date_end, $limit = 5000, $offset = 0) {
+    private function get_sessions_data($video_id, $date_start, $date_end, $limit = 500, $offset = 0) {
         global $wpdb;
         
         $sessions_table = $wpdb->prefix . 'vsl_sessions';
