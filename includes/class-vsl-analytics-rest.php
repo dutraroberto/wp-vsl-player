@@ -136,8 +136,8 @@ class VSL_Analytics_REST {
 					"INSERT IGNORE INTO {$wpdb->prefix}vsl_sessions
 					(session_id, video_post_id, youtube_video_id, first_impression,
 					device_type, page_url, utm_source, utm_medium, utm_campaign)
-					VALUES (%s,%d,%s,NOW(3),%s,%s,%s,%s,%s)",
-					$sid, $pid, $ytid, $device, $url,
+					VALUES (%s,%d,%s,%s,%s,%s,%s,%s,%s)",
+					$sid, $pid, $ytid, current_time( 'mysql' ), $device, $url,
 					$utm_source, $utm_medium, $utm_campaign
 				) );
 				break;
@@ -145,7 +145,7 @@ class VSL_Analytics_REST {
 			case 'play':
 				$wpdb->update(
 					"{$wpdb->prefix}vsl_sessions",
-					array( 'first_play' => current_time( 'mysql', true ) ),
+					array( 'first_play' => current_time( 'mysql' ) ),
 					array( 'session_id' => $sid, 'video_post_id' => $pid ),
 					array( '%s' ), array( '%s', '%d' )
 				);
@@ -243,8 +243,8 @@ class VSL_Analytics_REST {
 						"INSERT IGNORE INTO {$wpdb->prefix}vsl_sessions
 						(session_id, video_post_id, youtube_video_id, first_impression,
 						device_type, page_url, utm_source, utm_medium, utm_campaign)
-						VALUES (%s,%d,%s,NOW(3),%s,%s,%s,%s,%s)",
-						$sid, $pid, $ytid, $device, $url,
+						VALUES (%s,%d,%s,%s,%s,%s,%s,%s,%s)",
+						$sid, $pid, $ytid, current_time( 'mysql' ), $device, $url,
 						$utm_source, $utm_medium, $utm_campaign
 					) );
 					break;
@@ -252,7 +252,7 @@ class VSL_Analytics_REST {
 				case 'play':
 					$wpdb->update(
 						"{$wpdb->prefix}vsl_sessions",
-						array( 'first_play' => current_time( 'mysql', true ) ),
+						array( 'first_play' => current_time( 'mysql' ) ),
 						array( 'session_id' => $sid, 'video_post_id' => $pid ),
 						array( '%s' ), array( '%s', '%d' )
 					);

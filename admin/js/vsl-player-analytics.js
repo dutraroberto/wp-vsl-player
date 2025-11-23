@@ -352,6 +352,17 @@
     $("#total_cta_clicks").text(data.cta_clicks || 0);
     $("#play_rate").text((data.play_rate || 0) + "%");
     $("#iframe_views").text(data.iframe_views || 0);
+
+    // Exibir timezone configurado
+    if (data.timezone) {
+      const timezoneInfo = `<span style="color: #666; font-size: 12px;">Timezone: ${data.timezone.string} (${data.timezone.formatted})</span>`;
+      if ($("#timezone-info").length === 0) {
+        $(".vsl-analytics-summary").prepend(
+          '<div id="timezone-info" style="margin-bottom: 10px; padding: 8px; background: #f0f0f1; border-radius: 4px; text-align: center;"></div>'
+        );
+      }
+      $("#timezone-info").html(timezoneInfo);
+    }
   }
 
   /**

@@ -106,8 +106,13 @@ class VSL_Analytics_Data {
             'referrers' => $referrers_data,
             'cta_clicks' => $cta_clicks,
             'play_rate' => $play_rate,
-            'iframe_views' => $iframe_views, // Nova métrica: visualizações do iframe
+            'iframe_views' => $iframe_views,
             'utm_data' => $utm_data,
+            'timezone' => array(
+                'string' => wp_timezone_string(),
+                'offset' => get_option('gmt_offset'),
+                'formatted' => sprintf('UTC%s', get_option('gmt_offset') >= 0 ? '+' . get_option('gmt_offset') : get_option('gmt_offset'))
+            ),
             'filters' => array(
                 'group_urls' => $group_urls,
                 'utm_source' => $utm_source_filter,
@@ -211,6 +216,11 @@ class VSL_Analytics_Data {
      * @return array Métricas de resumo
      */
     private function calculate_summary_metrics_optimized($video_id, $date_start, $date_end) {
+        // Determinar TTL do cache baseado na data
+        $today = date('Y-m-d');
+        $is_realtime = ($date_end >= $today);
+        $cache_ttl = $is_realtime ? 2 * MINUTE_IN_SECONDS : HOUR_IN_SECONDS;
+        
         // Tentar obter do cache primeiro
         $cache_key = 'vsl_metrics_' . md5($video_id . '_' . $date_start . '_' . $date_end);
         $cached_metrics = wp_cache_get($cache_key, 'vsl_analytics');
@@ -328,8 +338,8 @@ class VSL_Analytics_Data {
             'formatted_duration' => $this->format_seconds($video_duration)
         );
         
-        // Salvar no cache por 1 hora
-        wp_cache_set($cache_key, $metrics, 'vsl_analytics', HOUR_IN_SECONDS);
+        // Salvar no cache com TTL dinâmico (2min para tempo real, 1h para histórico)
+        wp_cache_set($cache_key, $metrics, 'vsl_analytics', $cache_ttl);
         
         return $metrics;
     }
